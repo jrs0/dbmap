@@ -1,3 +1,1 @@
 # Database mapping editor
-
-Coming soon...
