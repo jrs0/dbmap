@@ -1,3 +1,4 @@
+
 #![cfg_attr(
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
@@ -19,10 +20,12 @@ struct Cli {
 
 #[tauri::command]
 fn get_yaml() -> String {
-    let result = match select(Some("yaml"), Some("~")).unwrap() {
-	Response::Okay(s) => s,
-	Response::OkayMultiple(_) => String::from("none"),
-	Response::Cancel => String::from("Cancelled")
+    let result = match select(Some("yaml"), Some("~")) {
+	Ok(response) => match response {
+	    Response::Okay(s) => s,
+	    _ => return String::from("{\"error\": \"other_error\"}")
+	},
+	Err(_) => return String::from("{\"error\": \"dialog_cancelled\"}"),
     };
     let f = std::fs::File::open(result).expect("Error reading file");
     let d: serde_json::Value = serde_yaml::from_reader(f).expect("Error parsing YAML");

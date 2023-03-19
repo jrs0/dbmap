@@ -273,7 +273,11 @@ export default function Home() {
 	    .then((result) => {
 
 		let res: Cat = JSON.parse(result as string);
+
+		// Currently just a quick hack to avoid crashing if
+		// the user closes the dialog box
 		console.log(res)
+		
 		// Note: all .then are executed
 		// asynchronously, so put
 		// sequential steps in here
@@ -290,7 +294,6 @@ export default function Home() {
 		}
 		// If you get here, then the state is valid
 		setCodeDef(res)
-
 	    })
     }
 
