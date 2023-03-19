@@ -277,29 +277,23 @@ export default function Home() {
 		// Currently just a quick hack to avoid crashing if
 		// the user closes the dialog box
 		console.log(res)
-		if (res["error"] == "dialog_cancelled") {
-		    return
-		} else if (res["error"] == "other_error")  {
-		    alert("An error occured trying to read the file.")
-		} else {
-		    
-		    // Note: all .then are executed
-		    // asynchronously, so put
-		    // sequential steps in here
-		    if (res.groups !== undefined) {
-			if (res.groups.length > 0) {
-			    setGroup(res.groups[0])
-			} else {
-			    alert("No groups found. Add some groups and reload the file.")
-			    return
-			}
+		
+		// Note: all .then are executed
+		// asynchronously, so put
+		// sequential steps in here
+		if (res.groups !== undefined) {
+		    if (res.groups.length > 0) {
+			setGroup(res.groups[0])
 		    } else {
-			alert("Did not find groups key. Add a groups key containing an array of groups.")
+			alert("No groups found. Add some groups and reload the file.")
 			return
 		    }
-		    // If you get here, then the state is valid
-		    setCodeDef(res)
+		} else {
+		    alert("Did not find groups key. Add a groups key containing an array of groups.")
+		    return
 		}
+		// If you get here, then the state is valid
+		setCodeDef(res)
 	    })
     }
 
