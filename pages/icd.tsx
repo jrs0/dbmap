@@ -256,7 +256,7 @@ export default function Home() {
     // Function to save the codes yaml file
     function save_file() {
         invoke('save_yaml', {
-	    top_level_category: top_level_category
+	    topLevelCategory: top_level_category
 	})
     }
 

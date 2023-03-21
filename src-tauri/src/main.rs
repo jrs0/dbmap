@@ -35,14 +35,15 @@ fn get_yaml() -> String {
 }
 
 #[tauri::command]
-fn save_yaml(code_def: serde_yaml::Value) {
+fn save_yaml(top_level_category: serde_yaml::Value) {
     let result = match save_file(Some("yaml"), Some("~")).unwrap() {
 	Response::Okay(s) => s,
 	Response::OkayMultiple(_) => String::from("none"),
 	Response::Cancel => String::from("Cancelled")
     };
 
-    let s: String = serde_yaml::to_string(&code_def).expect("Failed converting to string");
+    let s: String = serde_yaml::to_string(&top_level_category)
+	.expect("Failed converting to string");
     std::fs::write(result, s).expect("Failed writing to file")
 }
 
