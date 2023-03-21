@@ -459,7 +459,7 @@ export default function Home() {
 	    <p className={styles.info}>Use the groups selector to pick a group, and then use the checkboxes to include or exclude categories or codes from the group. When you are finished, save the resulting groups to a file.</p>
 	    <div>
 		<span className={styles.button}
-		    onClick={save_file}>Save as</span>
+		      onClick={save_file}>Save as</span>
 		<Link className={styles.button} href="/">Back</Link>
 	    </div>
 	    <div className={styles.groups}>
@@ -469,11 +469,26 @@ export default function Home() {
 		    ))
 		} </select>
 	    </div>
-	    <CategoryElem index={0}
-		      cat={top_level_category.child[0]}
-		      parent_exclude={false}
-		      toggle_cat={toggle_cat}
-		      group={group} />
+
+	    <ol className={styles.category_list}> {
+		top_level_category.categories.map((node,index) => {
+		    if (!hidden) {
+			return <li key={node.index}>
+			    <CategoryElem index={0}
+					  category={node}
+					  parent_exclude={false}
+					  toggle_category={toggle_cat}
+					  group={group} />
+			</li>
+		    }
+		})
+	    } </ol>	    
+	    {/* <CategoryElem index={0}
+		cat={top_level_category.child[0]}
+		parent_exclude={false}
+		toggle_cat={toggle_cat}
+		group={group} /> */}
 	</div>
+	
     }
 }
