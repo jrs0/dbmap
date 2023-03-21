@@ -35,16 +35,6 @@ interface Category {
     exclude?: string[];
 }
 
-// The top level category has a groups
-// list that defines which groups are
-// present in the file. The only other
-// field is the categories list, which
-// defines the top level of the category
-// tree
-interface TopLevelCategory {
-    categories: Category[]
-    groups: string[]
-}
 
 // Establish whether the component should be included
 // (i.e. ticked) and whether it should be enabled
@@ -99,58 +89,58 @@ function exclude_group(category: Category, group: string) {
 }
 
 // Remove all the exclude tags in all
-// sublevels of cat and return the result
-function remove_all_excludes(cat: Cat, group: string) {
+// sublevels of category and return the result
+function remove_all_excludes(category: Category, group: string) {
 
     // Remove the group from the exclude
     // list at this level
-    include_group(cat, group)
+    include_group(category, group)
  
-    if (cat.child !== undefined) {
-        // Loop over all the subcategories
+    if (category.categories !== undefined) {
+        // Loop over all the subcategoryegories
         // remove the exclude
 	// BUG: what even is the line blow?
 	// Need to pass in a function, remove_all
 	// _excludes is not getting any arguments
-        cat.child = cat.child.map((subcat) => (
-	    remove_all_excludes(subcat, group)
+        category.categories = category.categories.map((sub_category) => (
+	    remove_all_excludes(sub_category, group)
 	))
     }
 
-    // Return the modified category
-    return cat
+    // Return the modified categoryegory
+    return category
 }
 
 // Set the top-level excludes for the
-// subcategories in the current category,
+// subcategoryegories in the current categoryegory,
 // and return the modified object
-function set_first_excludes(cat: Cat, group: string) {
-    if (cat.child !== undefined) {
-        cat.child = cat.child.map((subcat) => {
+function set_first_excludes(category: Category, group: string) {
+    if (category.categories !== undefined) {
+        category.categories = category.categories.map((sub_category) => {
             // Add the group to the excludes key,
             // or create a new excludes list if
             // necessary
-            exclude_group(cat, group)
-            return (subcat)
+            exclude_group(category, group)
+            return (sub_category)
         })
     }
-    return cat
+    return category
 }
 
 // Props for a category or code element
 interface CategoryData {
     index: number; // Where is this category in the parent child list
-    cat: Cat; // The data for this category
+    category: Category; // The data for this category
     parent_exclude: boolean; // Whether the parent is excluded
     toggle_cat: (indices: number[],
 		 included: boolean) => void; // Callback to enable/disable
     group: string; // The currently selected group
 }
 
-function Category({ index, cat, parent_exclude,
-		    toggle_cat, group }: CategoryData) {
+function CategoryElem({ index, category, parent_exclude,
+			toggle_cat, group }: CategoryData) {
 
-    const { included, enabled } = visible_status(cat, group, parent_exclude)
+    const { included, enabled } = visible_status(category, group, parent_exclude)
 
     // Whether the children of this element are hidden
     let [hidden, setHidden] = useState(true);
@@ -173,29 +163,30 @@ function Category({ index, cat, parent_exclude,
         toggle_cat(new_indices, included)
     }
 
-    if (cat.child !== undefined) {
-	// cat is a category
+    // This is a candidate for simplifying now
+    if (category.categories !== undefined) {
+	// Non-leaf
 	return <div>
 	    <Checkbox checked={included}
 		enabled={enabled}
 		onChange={handleChange}></Checkbox>
-	    <span className={styles.cat_row}
+	    <span className={styles.category_row}
 		  onClick = {() => setHidden(!hidden) }>
-		<span className={styles.cat_name}>
-		    {cat.category}
+		<span className={styles.category_name}>
+		    {category.name}
 		</span>
-		<span className={styles.cat_desc}>
-		    {cat.docs}
+		<span className={styles.category_desc}>
+		    {category.docs}
 		</span>
 	    </span>
-	    <ol className={styles.cat_list}> {
-		cat.child.map((node,index) => {
+	    <ol className={styles.category_list}> {
+		category.categories.map((node,index) => {
 		    if (!hidden) {
 			return <li key={node.index}>
-			    <Category index={index}
-				      cat={node}
+			    <Categoryegory index={index}
+				      category={node}
 				      parent_exclude={!included}
-				      toggle_cat={toggle_cat_sub}
+				      toggle_category={toggle_category_sub}
 				      group={group} />
 			</li>
 		    }
@@ -203,17 +194,17 @@ function Category({ index, cat, parent_exclude,
 	    } </ol>	    
 	</div>
     } else {
-	// cat is a code (leaf node)
+	// Leaf
 	return <div>
 	    <Checkbox checked={included}
 		      enabled={enabled}
 		      onChange={handleChange}></Checkbox>
 	    <span onClick = {() => setHidden(!hidden) }>
-		<span className={styles.cat_name}>
-		    {cat.code}
+		<span className={styles.category_name}>
+		    {category.name}
 		</span>
-		<span className={styles.cat_desc}>
-		    {cat.docs}
+		<span className={styles.category_desc}>
+		    {category.docs}
 		</span>
 	    </span>
 	</div>	
@@ -221,9 +212,15 @@ function Category({ index, cat, parent_exclude,
 
 }
 
-interface CodeDef {
+// The top level category has a groups
+// list that defines which groups are
+// present in the file. The only other
+// field is the categories list, which
+// defines the top level of the category
+// tree
+interface TopLevelCategory {
+    categories: Category[]
     groups: string[]
-    child: Cat[]
 }
 
 // Get the category at nesting level
@@ -251,7 +248,7 @@ function get_cat(code_def: Cat, indices: number[]) {
 
 export default function Home() {
 
-    let [code_def, setCodeDef] = useState<Cat>({docs: "None",
+    let [code_def, setTopLevelCategory] = useState<Cat>({docs: "None",
 						index: "None"});
 
     // Function to save the codes yaml file
@@ -300,7 +297,7 @@ export default function Home() {
 		    return
 		}
 		// If you get here, then the state is valid
-		setCodeDef(res)
+		setTopLevelCategory(res)
 	    })
     }
 
@@ -437,7 +434,7 @@ export default function Home() {
         }
 
         // Now save the new code_defs state
-        setCodeDef(code_def_copy)
+        setTopLevelCategory(code_def_copy)
     }
 
     // TODO: fix this -- currently using the presence of
