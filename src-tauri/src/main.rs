@@ -36,10 +36,12 @@ fn get_yaml() -> String {
 
 #[tauri::command]
 fn save_yaml(top_level_category: serde_yaml::Value) {
-    let result = match save_file(Some("yaml"), Some("~")).unwrap() {
-	Response::Okay(s) => s,
-	Response::OkayMultiple(_) => String::from("none"),
-	Response::Cancel => String::from("Cancelled")
+    let result = match save_file(Some("yaml"), Some("~")) {
+	Ok(response) => match response {
+	    Response::Okay(s) => s,
+	    _ => return,
+	},
+	Err(_) => return,
     };
 
     let s: String = serde_yaml::to_string(&top_level_category)
