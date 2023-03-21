@@ -189,7 +189,7 @@ function CategoryElem({ index, category, parent_exclude,
 			    <CategoryElem index={index}
 				      category={node}
 				      parent_exclude={!included}
-				      toggle_category={toggle_cat_sub}
+				      toggle_cat={toggle_cat_sub}
 				      group={group} />
 			</li>
 		    }
@@ -237,11 +237,11 @@ interface TopLevelCategory {
 // a subcategory relative to any
 // (non-root) category, provided you
 // also pass the relative indices
-function get_cat(code_def: Cat, indices: number[]) {
-    let cat = code_def;
+function get_cat(top_level_category: TopLevelCategory, indices: number[]) {
+    let cat = top_level_category;
     indices.forEach((n) => {
-	if (cat.child !== undefined) {
-	    cat = cat.child[n]
+	if (cat.categories !== undefined) {
+	    cat = cat.categories[n]
 	} else {
 	    throw new Error("Expected to find cat");
 	}
@@ -476,7 +476,7 @@ export default function Home() {
 			    <CategoryElem index={0}
 					  category={node}
 					  parent_exclude={false}
-					  toggle_category={toggle_cat}
+					  toggle_cat={toggle_cat}
 					  group={group} />
 			</li>
 		})
