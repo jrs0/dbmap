@@ -25,30 +25,27 @@ function Checkbox({ checked, enabled, onChange }: CategorySelector) {
     );
 };
 
-// TODO: Should really combine this with Code below, because
-// the are the same apart from the child and category renamed
-// to code
-interface Cat {
-    groups?: string[];
-    exclude?: string[];
-    child?: Cat[];
-    category?: string;
-    code?: string;
+// The main category for a code
+// range or a specific code
+interface Category {
+    name: string
     docs: string;
     index: string;
+    categories?: Category[];
+    exclude?: string[];
 }
 
 
 // Establish whether the component should be included
 // (i.e. ticked) and whether it should be enabled
 // (grayed out or not)
-function visible_status(cat: Cat, group: string, parent_exclude: boolean) {
+function visible_status(category: Category, group: string, parent_exclude: boolean) {
     // Component is included by default, unless there
     // is an exclude tag at the current level, or
     // the parent is excluded
     let exclude_tag = false
-    if (cat.exclude !== undefined) {
-	exclude_tag = cat.exclude.includes(group);
+    if (category.exclude !== undefined) {
+	exclude_tag = category.exclude.includes(group);
     }
     let included = !exclude_tag && !parent_exclude
 
@@ -65,16 +62,16 @@ function visible_status(cat: Cat, group: string, parent_exclude: boolean) {
 // excludes in cat (modifies cat by
 // reference). Think of this function
 // as "unexclude_group".
-function include_group(cat: Cat, group: string) {
-    if (cat.exclude !== undefined) {
+function include_group(category: Category, group: string) {
+    if (category.exclude !== undefined) {
 	// Remove the group from the exclude array
-	const index = cat.exclude.indexOf(group);
+	const index = category.exclude.indexOf(group);
         if (index > -1) {
-            cat.exclude.splice(index, 1);
+            category.exclude.splice(index, 1);
         }
 	// Delete the exclude key if empty
-	if (cat.exclude.length == 0) {
-	    delete cat.exclude
+	if (category.exclude.length == 0) {
+	    delete category.exclude
 	}	
     }
 }
@@ -83,67 +80,72 @@ function include_group(cat: Cat, group: string) {
 // in cat, creating the exclude key
 // if nececessary (cat is modified
 // by reference)
-function exclude_group(cat: Cat, group: string) {
-    if (cat.exclude !== undefined) {
-        cat.exclude.push(group)
+function exclude_group(category: Category, group: string) {
+    if (category.exclude !== undefined) {
+        category.exclude.push(group)
     } else {
-        cat.exclude = [group]
+        category.exclude = [group]
     }
 }
 
 // Remove all the exclude tags in all
-// sublevels of cat and return the result
-function remove_all_excludes(cat: Cat, group: string) {
+// sublevels of category and return the result
+function remove_all_excludes(category: Category, group: string) {
 
     // Remove the group from the exclude
     // list at this level
-    include_group(cat, group)
+    include_group(category, group)
  
-    if (cat.child !== undefined) {
-        // Loop over all the subcategories
+    if (category.categories !== undefined) {
+        // Loop over all the subcategoryegories
         // remove the exclude
 	// BUG: what even is the line blow?
 	// Need to pass in a function, remove_all
 	// _excludes is not getting any arguments
-        cat.child = cat.child.map((subcat) => (
-	    remove_all_excludes(subcat, group)
+        category.categories = category.categories.map((sub_category) => (
+	    remove_all_excludes(sub_category, group)
 	))
     }
 
-    // Return the modified category
-    return cat
+    // Return the modified categoryegory
+    return category
 }
 
 // Set the top-level excludes for the
-// subcategories in the current category,
+// subcategoryegories in the current categoryegory,
 // and return the modified object
-function set_first_excludes(cat: Cat, group: string) {
-    if (cat.child !== undefined) {
-        cat.child = cat.child.map((subcat) => {
+function set_first_excludes(category: Category, group: string) {
+    if (category.categories !== undefined) {
+        category.categories = category.categories.map((sub_category) => {
             // Add the group to the excludes key,
             // or create a new excludes list if
             // necessary
-            exclude_group(cat, group)
-            return (subcat)
+            exclude_group(category, group)
+            return (sub_category)
         })
     }
-    return cat
+    return category
 }
 
 // Props for a category or code element
 interface CategoryData {
     index: number; // Where is this category in the parent child list
-    cat: Cat; // The data for this category
+    category: Category; // The data for this category
     parent_exclude: boolean; // Whether the parent is excluded
     toggle_cat: (indices: number[],
 		 included: boolean) => void; // Callback to enable/disable
     group: string; // The currently selected group
 }
 
-function Category({ index, cat, parent_exclude,
-		    toggle_cat, group }: CategoryData) {
+// Element that renders a category, which can either be a leaf
+// (a single code) or a category that contains a subcategory list.
+function CategoryElem({ index, category, parent_exclude,
+			toggle_cat, group }: CategoryData) {
 
-    const { included, enabled } = visible_status(cat, group, parent_exclude)
+    const {
+	included,
+	enabled
+    } = visible_status(category, group, parent_exclude)
 
     // Whether the children of this element are hidden
     let [hidden, setHidden] = useState(true);
@@ -166,27 +168,30 @@ function Category({ index, cat, parent_exclude,
         toggle_cat(new_indices, included)
     }
 
-    if (cat.child !== undefined) {
-	// cat is a category
+    // This is a candidate for simplifying now that Category is a
+    // single object. It would be nice not to duplicate between
+    // the category and leaf node.
+    if (category.categories !== undefined) {
+	// Non-leaf
 	return <div>
 	    <Checkbox checked={included}
 		enabled={enabled}
 		onChange={handleChange}></Checkbox>
-	    <span className={styles.cat_row}
+	    <span className={styles.category_row}
 		  onClick = {() => setHidden(!hidden) }>
-		<span className={styles.cat_name}>
-		    {cat.category}
+		<span className={styles.category_name}>
+		    {category.name}
 		</span>
-		<span className={styles.cat_desc}>
-		    {cat.docs}
+		<span className={styles.category_desc}>
+		    {category.docs}
 		</span>
 	    </span>
-	    <ol className={styles.cat_list}> {
-		cat.child.map((node,index) => {
+	    <ol className={styles.category_list}> {
+		category.categories.map((node,index) => {
 		    if (!hidden) {
 			return <li key={node.index}>
-			    <Category index={index}
-				      cat={node}
+			    <CategoryElem index={index}
+				      category={node}
 				      parent_exclude={!included}
 				      toggle_cat={toggle_cat_sub}
 				      group={group} />
@@ -196,17 +201,17 @@ function Category({ index, cat, parent_exclude,
 	    } </ol>	    
 	</div>
     } else {
-	// cat is a code (leaf node)
+	// Leaf
 	return <div>
 	    <Checkbox checked={included}
 		      enabled={enabled}
 		      onChange={handleChange}></Checkbox>
 	    <span onClick = {() => setHidden(!hidden) }>
-		<span className={styles.cat_name}>
-		    {cat.code}
+		<span className={styles.category_name}>
+		    {category.name}
 		</span>
-		<span className={styles.cat_desc}>
-		    {cat.docs}
+		<span className={styles.category_desc}>
+		    {category.docs}
 		</span>
 	    </span>
 	</div>	
@@ -214,10 +219,17 @@ function Category({ index, cat, parent_exclude,
 
 }
 
-interface CodeDef {
+// The top level category has a groups
+// list that defines which groups are
+// present in the file. The only other
+// field is the categories list, which
+// defines the top level of the category
+// tree
+interface TopLevelCategory {
+    categories: Category[]
     groups: string[]
-    child: Cat[]
 }
+
 
 // Get the category at nesting level
 // defined by indices from code_def
@@ -230,34 +242,38 @@ interface CodeDef {
 // a subcategory relative to any
 // (non-root) category, provided you
 // also pass the relative indices
-function get_cat(code_def: Cat, indices: number[]) {
-    let cat = code_def;
-    indices.forEach((n) => {
-	if (cat.child !== undefined) {
-	    cat = cat.child[n]
+function get_cat(top_level_category: TopLevelCategory, indices: number[]) {
+
+    // Get the first category as a special case (convert from top level
+    // category to plain category)
+    let category = top_level_category.categories[indices[0]];
+    indices.slice(1).forEach((n) => {
+	if (category.categories !== undefined) {
+	    category = category.categories[n]
 	} else {
 	    throw new Error("Expected to find cat");
 	}
     })
-    return cat;
+    return category;
 }
 
 export default function Home() {
 
-    let [code_def, setCodeDef] = useState<Cat>({docs: "None",
-						index: "None"});
+    let [top_level_category, setTopLevelCategory] = useState<TopLevelCategory>({categories: [], groups: []});
 
     // Function to save the codes yaml file
     function save_file() {
-        invoke('save_yaml', { codeDef: code_def })
+        invoke('save_yaml', {
+	    topLevelCategory: top_level_category
+	})
     }
 
     // Function to get the list of groups
     function get_groups() {
-	if (code_def.groups !== undefined) {
-            return code_def.groups
+	if (top_level_category.groups.length != 0) {
+            return top_level_category.groups
 	} else {
-	    throw new Error("Cannot get groups before loading a file");
+	    throw new Error("There are no groups in the current top level category");
 	}
     }
 
@@ -272,12 +288,12 @@ export default function Home() {
         invoke('get_yaml')
 	    .then((result) => {
 
-		let res: Cat = JSON.parse(result as string);
-
-		// Currently just a quick hack to avoid crashing if
-		// the user closes the dialog box
+		// From rust
+		let res: TopLevelCategory = JSON.parse(result as string);
 		console.log(res)
 		
+		// Currently just a quick hack to avoid crashing if
+		// the user closes the dialog box
 		// Note: all .then are executed
 		// asynchronously, so put
 		// sequential steps in here
@@ -293,7 +309,7 @@ export default function Home() {
 		    return
 		}
 		// If you get here, then the state is valid
-		setCodeDef(res)
+		setTopLevelCategory(res)
 	    })
     }
 
@@ -307,14 +323,14 @@ export default function Home() {
         // Copy the codes definition structure
         // to modify it. This may be a performance
         // problem, but it can be optimised later.
-        let code_def_copy = structuredClone(code_def);
+        let top_level_category_copy = structuredClone(top_level_category);
 
         // Extract the cat referred to by indices
         // (note that cat is modified by reference,
         // so changing the resulting cat will still
-        // change code_def_copy)
-        let cat = get_cat(code_def_copy, indices)
-
+        // change top_level_category_copy)
+        let category = get_cat(top_level_category_copy, indices)
+	console.log("category:", category)
         // Check the current state of the checkbox
         if (included) {
             // When the current component is included,
@@ -327,15 +343,15 @@ export default function Home() {
 
             // Deep copy the state to use setCat without
             // problems
-            let cat_copy = Object.assign({}, cat)
+            let category_copy = Object.assign({}, category)
 
             // Clear all the nested exclude tags
             // and then re-enable the current level
             // exclude flag
-            cat = remove_all_excludes(cat, group)
-            exclude_group(cat, group)
+            category = remove_all_excludes(category, group)
+            exclude_group(category, group)
 
-	    console.log("Included, now ", cat)
+	    console.log("Included, now ", category)
 
         } else {
             // When the current component is excluded,
@@ -367,23 +383,23 @@ export default function Home() {
             // has an exclude key (which may be this
             // category).
             let indices_above = indices.slice();
-            let cat_above = cat;
+            let category_above = category;
             while (true) {
-
+		console.log("Above", category_above)
 		// Find the first category above
 		// (or equal to) cat where there
 		// is an exclude for the current
 		// group
-		if (cat_above.exclude !== undefined) {
-		    if (cat_above.exclude.includes(group)) {
+		if (category_above.exclude !== undefined) {
+		    if (category_above.exclude.includes(group)) {
 			break
 		    }
 		}
 		
 		// Move to the category above
 		indices_above.pop()
-                cat_above = get_cat(code_def_copy,
-				    indices_above)
+                category_above = get_cat(top_level_category_copy,
+					 indices_above)
             }
 
             // At this point, cat is the category
@@ -391,7 +407,7 @@ export default function Home() {
             // first higher category that contains
             // an exclude (which may be equal to cat).
             // Remove this exclude.
-	    include_group(get_cat(code_def_copy, indices_above),
+	    include_group(get_cat(top_level_category_copy, indices_above),
 			  group)
 	    
             // Now walk back down the tree from
@@ -406,39 +422,39 @@ export default function Home() {
 	    
             // Loop over all the subcategories between
             // cat_above and cat
-            cat = cat_above
+            category = category_above
             rel_indices.forEach((n) => {
 
                 // Add an exclude key to all the
                 // subcategories which are not on the path
-		if (cat.child !== undefined) {
-                    cat.child = cat.child.map((subcat, index) => {
+		if (category.categories !== undefined) {
+                    category.categories = category.categories.map((sub_category, index) => {
 			if (index != n) {
-                            exclude_group(subcat, group)
+                            exclude_group(sub_category, group)
 			}
-			return (subcat)
+			return (sub_category)
                     })
 		} else {
 		    throw new Error("Expected to find child key")
 		}
 
                 // Move down a level
-                cat = cat.child[n]
+                category = category.categories[n]
             })
 
-	    console.log("Included, now ", cat)
+	    console.log("Included, now ", category)
         }
 
-        // Now save the new code_defs state
-        setCodeDef(code_def_copy)
+        // Now save the new top_level_categorys state
+        setTopLevelCategory(top_level_category_copy)
     }
 
-    // TODO: fix this -- currently using the presence of
-    // child key to tell whether the file is loaded
-    if (code_def.child == undefined) {
+    // TODO: Currently using the length of the categories array
+    // as a proxy for whether the file is loaded. Fix.
+    if (top_level_category.categories.length == 0) {
         return <div>
-            <h1>ICD-10 Editor</h1>
-	    <p className={styles.info}>Load a codes file to edit groups of ICD-10 codes</p>
+            <h1>Code Group Editor</h1>
+	    <p className={styles.info}>Load a codes file to define groups of codes</p>
 	    <div>
 		<span className={styles.button}
 		      onClick={load_file}>Load file</span>
@@ -447,11 +463,11 @@ export default function Home() {
 	</div>
     } else {
         return <div>
-            <h1>ICD-10 Editor</h1>
+            <h1>Code Group Editor</h1>
 	    <p className={styles.info}>Use the groups selector to pick a group, and then use the checkboxes to include or exclude categories or codes from the group. When you are finished, save the resulting groups to a file.</p>
 	    <div>
 		<span className={styles.button}
-		    onClick={save_file}>Save as</span>
+		      onClick={save_file}>Save as</span>
 		<Link className={styles.button} href="/">Back</Link>
 	    </div>
 	    <div className={styles.groups}>
@@ -461,11 +477,24 @@ export default function Home() {
 		    ))
 		} </select>
 	    </div>
-	    <Category index={0}
-		      cat={code_def.child[0]}
-		      parent_exclude={false}
-		      toggle_cat={toggle_cat}
-		      group={group} />
+
+	    <ol className={styles.category_list}> {
+		top_level_category.categories.map((node,index) => {
+			return <li key={node.index}>
+			    <CategoryElem index={index}
+					  category={node}
+					  parent_exclude={false}
+					  toggle_cat={toggle_cat}
+					  group={group} />
+			</li>
+		})
+	    } </ol>	    
+	    {/* <CategoryElem index={0}
+		cat={top_level_category.child[0]}
+		parent_exclude={false}
+		toggle_cat={toggle_cat}
+		group={group} /> */}
 	</div>
+	
     }
 }

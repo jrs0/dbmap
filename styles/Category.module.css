@@ -1,13 +1,13 @@
-.cat_name {
+.category_name {
     font-weight: bold;
     padding: 0.5em;
 }
 
-.cat_desc {
+.category_desc {
     cursor: pointer;
 }
 
-.cat_list {
+.category_list {
     list-style-type: none;
     padding-left: 1em;
 
@@ -21,11 +21,11 @@
     width: 10em;
 }
 
-.cat_row {
+.category_row {
     /* color: darkblue; */
 }
 
-.cat_row:hover {
+.category_row:hover {
     background-color: gray;
     transition: 0.2s;
     cursor: pointer;
