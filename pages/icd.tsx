@@ -62,7 +62,7 @@ function visible_status(category: Category, group: string, parent_exclude: boole
 // excludes in cat (modifies cat by
 // reference). Think of this function
 // as "unexclude_group".
-function include_group(category: Categoryegory, group: string) {
+function include_group(category: Category, group: string) {
     if (category.exclude !== undefined) {
 	// Remove the group from the exclude array
 	const index = category.exclude.indexOf(group);
