@@ -331,7 +331,7 @@ export default function Home() {
         // so changing the resulting cat will still
         // change top_level_category_copy)
         let category = get_cat(top_level_category_copy, indices)
-
+	console.log("category:", category)
         // Check the current state of the checkbox
         if (included) {
             // When the current component is included,
@@ -386,7 +386,7 @@ export default function Home() {
             let indices_above = indices.slice();
             let category_above = category;
             while (true) {
-
+		console.log("Above", category_above)
 		// Find the first category above
 		// (or equal to) cat where there
 		// is an exclude for the current
