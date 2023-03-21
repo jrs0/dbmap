@@ -49,12 +49,12 @@ interface TopLevelCategory {
 // Establish whether the component should be included
 // (i.e. ticked) and whether it should be enabled
 // (grayed out or not)
-function visible_status(cat: Cat, group: string, parent_exclude: boolean) {
+function visible_status(category: Category, group: string, parent_exclude: boolean) {
     // Component is included by default, unless there
     // is an exclude tag at the current level, or
     // the parent is excluded
     let exclude_tag = false
-    if (cat.exclude !== undefined) {
+    if (category.exclude !== undefined) {
 	exclude_tag = cat.exclude.includes(group);
     }
     let included = !exclude_tag && !parent_exclude
@@ -72,16 +72,16 @@ function visible_status(cat: Cat, group: string, parent_exclude: boolean) {
 // excludes in cat (modifies cat by
 // reference). Think of this function
 // as "unexclude_group".
-function include_group(cat: Cat, group: string) {
-    if (cat.exclude !== undefined) {
+function include_group(category: Categoryegory, group: string) {
+    if (category.exclude !== undefined) {
 	// Remove the group from the exclude array
-	const index = cat.exclude.indexOf(group);
+	const index = category.exclude.indexOf(group);
         if (index > -1) {
-            cat.exclude.splice(index, 1);
+            category.exclude.splice(index, 1);
         }
 	// Delete the exclude key if empty
-	if (cat.exclude.length == 0) {
-	    delete cat.exclude
+	if (category.exclude.length == 0) {
+	    delete category.exclude
 	}	
     }
 }
@@ -90,11 +90,11 @@ function include_group(cat: Cat, group: string) {
 // in cat, creating the exclude key
 // if nececessary (cat is modified
 // by reference)
-function exclude_group(cat: Cat, group: string) {
-    if (cat.exclude !== undefined) {
-        cat.exclude.push(group)
+function exclude_group(category: Category, group: string) {
+    if (category.exclude !== undefined) {
+        category.exclude.push(group)
     } else {
-        cat.exclude = [group]
+        category.exclude = [group]
     }
 }
 
