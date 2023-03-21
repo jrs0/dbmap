@@ -248,20 +248,21 @@ function get_cat(code_def: Cat, indices: number[]) {
 
 export default function Home() {
 
-    let [code_def, setTopLevelCategory] = useState<Cat>({docs: "None",
-						index: "None"});
+    let [top_level_category, setTopLevelCategory] = useState<ToplevelCategory>({categories: [], groups: []});
 
     // Function to save the codes yaml file
     function save_file() {
-        invoke('save_yaml', { codeDef: code_def })
+        invoke('save_yaml', {
+	    top_level_category: top_level_category
+	})
     }
 
     // Function to get the list of groups
     function get_groups() {
-	if (code_def.groups !== undefined) {
-            return code_def.groups
+	if (top_level_category.groups.length != 0) {
+            return top_level_category.groups
 	} else {
-	    throw new Error("Cannot get groups before loading a file");
+	    throw new Error("There are no groups in the current top level category");
 	}
     }
 
@@ -276,12 +277,12 @@ export default function Home() {
         invoke('get_yaml')
 	    .then((result) => {
 
-		let res: Cat = JSON.parse(result as string);
-
-		// Currently just a quick hack to avoid crashing if
-		// the user closes the dialog box
+		// From rust
+		let res: TopLevelCategory = JSON.parse(result as string);
 		console.log(res)
 		
+		// Currently just a quick hack to avoid crashing if
+		// the user closes the dialog box
 		// Note: all .then are executed
 		// asynchronously, so put
 		// sequential steps in here
@@ -311,13 +312,13 @@ export default function Home() {
         // Copy the codes definition structure
         // to modify it. This may be a performance
         // problem, but it can be optimised later.
-        let code_def_copy = structuredClone(code_def);
+        let top_level_category_copy = structuredClone(top_level_category);
 
         // Extract the cat referred to by indices
         // (note that cat is modified by reference,
         // so changing the resulting cat will still
-        // change code_def_copy)
-        let cat = get_cat(code_def_copy, indices)
+        // change top_level_category_copy)
+        let category = get_cat(top_level_category_copy, indices)
 
         // Check the current state of the checkbox
         if (included) {
@@ -331,15 +332,15 @@ export default function Home() {
 
             // Deep copy the state to use setCat without
             // problems
-            let cat_copy = Object.assign({}, cat)
+            let category_copy = Object.assign({}, category)
 
             // Clear all the nested exclude tags
             // and then re-enable the current level
             // exclude flag
-            cat = remove_all_excludes(cat, group)
-            exclude_group(cat, group)
+            category = remove_all_excludes(category, group)
+            exclude_group(category, group)
 
-	    console.log("Included, now ", cat)
+	    console.log("Included, now ", category)
 
         } else {
             // When the current component is excluded,
@@ -371,23 +372,23 @@ export default function Home() {
             // has an exclude key (which may be this
             // category).
             let indices_above = indices.slice();
-            let cat_above = cat;
+            let category_above = category;
             while (true) {
 
 		// Find the first category above
 		// (or equal to) cat where there
 		// is an exclude for the current
 		// group
-		if (cat_above.exclude !== undefined) {
-		    if (cat_above.exclude.includes(group)) {
+		if (category_above.exclude !== undefined) {
+		    if (category_above.exclude.includes(group)) {
 			break
 		    }
 		}
 		
 		// Move to the category above
 		indices_above.pop()
-                cat_above = get_cat(code_def_copy,
-				    indices_above)
+                category_above = get_cat(top_level_category_copy,
+					 indices_above)
             }
 
             // At this point, cat is the category
@@ -395,7 +396,7 @@ export default function Home() {
             // first higher category that contains
             // an exclude (which may be equal to cat).
             // Remove this exclude.
-	    include_group(get_cat(code_def_copy, indices_above),
+	    include_group(get_cat(top_level_category_copy, indices_above),
 			  group)
 	    
             // Now walk back down the tree from
@@ -410,15 +411,15 @@ export default function Home() {
 	    
             // Loop over all the subcategories between
             // cat_above and cat
-            cat = cat_above
+            category = category_above
             rel_indices.forEach((n) => {
 
                 // Add an exclude key to all the
                 // subcategories which are not on the path
-		if (cat.child !== undefined) {
-                    cat.child = cat.child.map((subcat, index) => {
+		if (category.categories !== undefined) {
+                    category.categories = cat.child.map((sub_category, index) => {
 			if (index != n) {
-                            exclude_group(subcat, group)
+                            exclude_group(sub_category, group)
 			}
 			return (subcat)
                     })
@@ -427,22 +428,22 @@ export default function Home() {
 		}
 
                 // Move down a level
-                cat = cat.child[n]
+                category = category.categories[n]
             })
 
-	    console.log("Included, now ", cat)
+	    console.log("Included, now ", category)
         }
 
-        // Now save the new code_defs state
-        setTopLevelCategory(code_def_copy)
+        // Now save the new top_level_categorys state
+        setTopLevelCategory(top_level_category_copy)
     }
 
-    // TODO: fix this -- currently using the presence of
-    // child key to tell whether the file is loaded
-    if (code_def.child == undefined) {
+    // TODO: Currently using the length of the categories array
+    // as a proxy for whether the file is loaded. Fix.
+    if (top_level_category.categories.length == 0) {
         return <div>
-            <h1>ICD-10 Editor</h1>
-	    <p className={styles.info}>Load a codes file to edit groups of ICD-10 codes</p>
+            <h1>Code Group Editor</h1>
+	    <p className={styles.info}>Load a codes file to define groups of codes</p>
 	    <div>
 		<span className={styles.button}
 		      onClick={load_file}>Load file</span>
@@ -451,7 +452,7 @@ export default function Home() {
 	</div>
     } else {
         return <div>
-            <h1>ICD-10 Editor</h1>
+            <h1>Code Group Editor</h1>
 	    <p className={styles.info}>Use the groups selector to pick a group, and then use the checkboxes to include or exclude categories or codes from the group. When you are finished, save the resulting groups to a file.</p>
 	    <div>
 		<span className={styles.button}
@@ -465,8 +466,8 @@ export default function Home() {
 		    ))
 		} </select>
 	    </div>
-	    <Category index={0}
-		      cat={code_def.child[0]}
+	    <CategoryElem index={0}
+		      cat={top_level_category.child[0]}
 		      parent_exclude={false}
 		      toggle_cat={toggle_cat}
 		      group={group} />
