@@ -137,6 +137,8 @@ interface CategoryData {
     group: string; // The currently selected group
 }
 
+// Element that renders a category, which can either be a leaf
+// (a single code) or a category that contains a subcategory list.
 function CategoryElem({ index, category, parent_exclude,
 			toggle_cat, group }: CategoryData) {
 
@@ -166,7 +168,9 @@ function CategoryElem({ index, category, parent_exclude,
         toggle_cat(new_indices, included)
     }
 
-    // This is a candidate for simplifying now
+    // This is a candidate for simplifying now that Category is a
+    // single object. It would be nice not to duplicate between
+    // the category and leaf node.
     if (category.categories !== undefined) {
 	// Non-leaf
 	return <div>
@@ -226,11 +230,6 @@ interface TopLevelCategory {
     groups: string[]
 }
 
-/// Covers the common case between Category and
-/// top level category (has an optional categories key)
-interface HasCategories {
-    categories?: Category[]
-}
 
 // Get the category at nesting level
 // defined by indices from code_def
@@ -243,16 +242,20 @@ interface HasCategories {
 // a subcategory relative to any
 // (non-root) category, provided you
 // also pass the relative indices
-function get_cat(top_level_category: HasCategories, indices: number[]) {
-    let cat = top_level_category;
+function get_cat(top_level_category: TopLevelCategory, indices: number[]) {
+
+    // Get the first category as a special case (convert from top level
+    // category to plain category)
+    let category = top_level_category.categories[indices[0]];
+    indices.shift() // Pop the first element
     indices.forEach((n) => {
-	if (cat.categories !== undefined) {
-	    cat = cat.categories[n]
+	if (category.categories !== undefined) {
+	    category = category.categories[n]
 	} else {
 	    throw new Error("Expected to find cat");
 	}
     })
-    return cat;
+    return category;
 }
 
 export default function Home() {
