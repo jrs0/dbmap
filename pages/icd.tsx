@@ -247,8 +247,7 @@ function get_cat(top_level_category: TopLevelCategory, indices: number[]) {
     // Get the first category as a special case (convert from top level
     // category to plain category)
     let category = top_level_category.categories[indices[0]];
-    indices.shift() // Pop the first element
-    indices.forEach((n) => {
+    indices.slice(1).forEach((n) => {
 	if (category.categories !== undefined) {
 	    category = category.categories[n]
 	} else {
