@@ -140,7 +140,10 @@ interface CategoryData {
 function CategoryElem({ index, category, parent_exclude,
 			toggle_cat, group }: CategoryData) {
 
-    const { included, enabled } = visible_status(category, group, parent_exclude)
+    const {
+	included,
+	enabled
+    } = visible_status(category, group, parent_exclude)
 
     // Whether the children of this element are hidden
     let [hidden, setHidden] = useState(true);
@@ -183,7 +186,7 @@ function CategoryElem({ index, category, parent_exclude,
 		category.categories.map((node,index) => {
 		    if (!hidden) {
 			return <li key={node.index}>
-			    <Categoryegory index={index}
+			    <CategoryElem index={index}
 				      category={node}
 				      parent_exclude={!included}
 				      toggle_category={toggle_category_sub}
