@@ -45,7 +45,7 @@ function visible_status(category: Category, group: string, parent_exclude: boole
     // the parent is excluded
     let exclude_tag = false
     if (category.exclude !== undefined) {
-	exclude_tag = cat.exclude.includes(group);
+	exclude_tag = category.exclude.includes(group);
     }
     let included = !exclude_tag && !parent_exclude
 
@@ -189,7 +189,7 @@ function CategoryElem({ index, category, parent_exclude,
 			    <CategoryElem index={index}
 				      category={node}
 				      parent_exclude={!included}
-				      toggle_category={toggle_category_sub}
+				      toggle_category={toggle_cat_sub}
 				      group={group} />
 			</li>
 		    }
@@ -472,7 +472,6 @@ export default function Home() {
 
 	    <ol className={styles.category_list}> {
 		top_level_category.categories.map((node,index) => {
-		    if (!hidden) {
 			return <li key={node.index}>
 			    <CategoryElem index={0}
 					  category={node}
@@ -480,7 +479,6 @@ export default function Home() {
 					  toggle_category={toggle_cat}
 					  group={group} />
 			</li>
-		    }
 		})
 	    } </ol>	    
 	    {/* <CategoryElem index={0}

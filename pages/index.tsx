@@ -5,7 +5,7 @@ export default function Home() {
     return (
         <ul>
             <li><Link href="/mapping">Mappings</Link></li>
-            <li><Link href="/icd">ICD-10</Link></li>
+            <li><Link href="/icd">Define code groups</Link></li>
         </ul>
     )
 }
