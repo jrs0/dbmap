@@ -25,19 +25,26 @@ function Checkbox({ checked, enabled, onChange }: CategorySelector) {
     );
 };
 
-// TODO: Should really combine this with Code below, because
-// the are the same apart from the child and category renamed
-// to code
-interface Cat {
-    groups?: string[];
-    exclude?: string[];
-    child?: Cat[];
-    category?: string;
-    code?: string;
+// The main category for a code
+// range or a specific code
+interface Category {
+    name: string
     docs: string;
     index: string;
+    categories?: Category[];
+    exclude?: string[];
 }
 
+// The top level category has a groups
+// list that defines which groups are
+// present in the file. The only other
+// field is the categories list, which
+// defines the top level of the category
+// tree
+interface TopLevelCategory {
+    categories: Category[]
+    groups: string[]
+}
 
 // Establish whether the component should be included
 // (i.e. ticked) and whether it should be enabled
