@@ -226,6 +226,12 @@ interface TopLevelCategory {
     groups: string[]
 }
 
+/// Covers the common case between Category and
+/// top level category (has an optional categories key)
+interface HasCategories {
+    categories?: Category[]
+}
+
 // Get the category at nesting level
 // defined by indices from code_def
 // structure. A reference to a
@@ -237,7 +243,7 @@ interface TopLevelCategory {
 // a subcategory relative to any
 // (non-root) category, provided you
 // also pass the relative indices
-function get_cat(top_level_category: TopLevelCategory, indices: number[]) {
+function get_cat(top_level_category: HasCategories, indices: number[]) {
     let cat = top_level_category;
     indices.forEach((n) => {
 	if (cat.categories !== undefined) {
@@ -251,7 +257,7 @@ function get_cat(top_level_category: TopLevelCategory, indices: number[]) {
 
 export default function Home() {
 
-    let [top_level_category, setTopLevelCategory] = useState<ToplevelCategory>({categories: [], groups: []});
+    let [top_level_category, setTopLevelCategory] = useState<TopLevelCategory>({categories: [], groups: []});
 
     // Function to save the codes yaml file
     function save_file() {
@@ -473,7 +479,7 @@ export default function Home() {
 	    <ol className={styles.category_list}> {
 		top_level_category.categories.map((node,index) => {
 			return <li key={node.index}>
-			    <CategoryElem index={0}
+			    <CategoryElem index={index}
 					  category={node}
 					  parent_exclude={false}
 					  toggle_cat={toggle_cat}
