@@ -420,11 +420,11 @@ export default function Home() {
                 // Add an exclude key to all the
                 // subcategories which are not on the path
 		if (category.categories !== undefined) {
-                    category.categories = cat.child.map((sub_category, index) => {
+                    category.categories = category.categories.map((sub_category, index) => {
 			if (index != n) {
                             exclude_group(sub_category, group)
 			}
-			return (subcat)
+			return (sub_category)
                     })
 		} else {
 		    throw new Error("Expected to find child key")
