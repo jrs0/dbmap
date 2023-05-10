@@ -183,7 +183,7 @@ function Date({ timestamp }: { Timestamp }) {
 }
 
 interface AcsRecord {
-    nhs_number: integer,
+    nhs_number: string,
     age_at_index: integer,
     date_of_index: Timestamp,
     presentation: string,
@@ -219,6 +219,14 @@ function Mortality({ mortality }: { Mortality }) {
     }
 }
 
+function get_optional_array(record, key) {
+    if (key in record) {
+	return record[key]
+    } else {
+	return []
+    }
+}
+
 function AcsRecordComp({ record } : { AcsRecord }) {
     return <div  className ={record_styles.record}>
 	<PatientInfo record = {record} />
@@ -226,14 +234,48 @@ function AcsRecordComp({ record } : { AcsRecord }) {
 	<EventCountComp events ={record.event_counts} />
 	<b>Index Spell</b>
 	<SpellComp spell = {record.index_spell} />
+	<b>Spells after</b>
+	<div> {
+	    get_optional_array(record, "spells_after").map(spell =>
+		<SpellComp spell = {spell} />
+	    )
+	} </div>
+	<b>Spells before</b>
+	<div> {
+	    get_optional_array(record, "spells_before").map(spell =>
+		<SpellComp spell = {spell} />
+	    )
+	} </div>
+
     </div>
+}
+
+function clinical_code_contains_group(clinical_code, group) {
+    
+}
+
+function episode_contains_clinical_code_group_anywhere(episode, group) {
+    
+}
+
+function spell_contains_clinical_code_group_anywhere(spell, group) {
+
+}
+
+function record_contains_clinical_code_group_anywhere(record, group) {
+    const index_spell = record.index_spell
 }
 
 export default function Home() {
 
     let [acs_records, setAcsRecords] = useState<AcsRecord[]>([]);
     
+    const [searchTerm, setSearchTerm] = useState('');
 
+    const handleChange = event => {
+	setSearchTerm(event.target.value);
+    };
+    
     // Function to load the codes yaml file
     function load_file() {
         invoke('get_yaml')
@@ -242,7 +284,6 @@ export default function Home() {
 		// From rust
 		let acs_records: AcsRecord[] = JSON.parse(result as string);
 		setAcsRecords(acs_records);
-		console.log(result);
 	    })
     }
 
@@ -257,8 +298,23 @@ export default function Home() {
 	    </div>
 	</div>
     } else {
-	return <div> {
-	    acs_records.map(record => <AcsRecordComp record = {record} />)   
-	} </div>
+
+	const searched_records = acs_records.filter(function(record) {
+
+	    const terms = searchTerm.split(/[ ,]+/)
+	    
+	    return true;
+	});
+	
+	return <div>
+	    <label htmlFor="search">Search: </label>
+	    <input id="search" type="text" onChange={handleChange}/>
+	    <p>
+		Searching for <strong>{searchTerm}</strong>.
+	    </p>
+	    <hr />
+	    {searched_records.map(record => <AcsRecordComp record = {record}
+				       />)   
+	    } </div>
     }
 }
