@@ -24,5 +24,19 @@
 .clinical_codes_block {
     border: 1px solid black;
     margin: 1ex;
+    padding: 1ex;
+    display: inline-block;
+    vertical-align: top;
+}
+
+.event_count {
+    border: 1px solid black;
+    margin: 1ex;
     padding: 1ex
+}
+
+.side_by_side {
+    display: inline-block;
+    vertical-align: top;
+    margin: 1ex
 }

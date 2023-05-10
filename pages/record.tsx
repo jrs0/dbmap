@@ -5,6 +5,15 @@ import Link from 'next/link'
 import record_styles from '../styles/ClinicalCodeComp.module.css'
 import styles from '../styles/Category.module.css'
 
+interface EventCount {
+    name: string,
+    count: integer,
+}
+
+interface Events {
+    before: EventCount[],
+    after: EventCount[],
+}
 
 interface Timestamp {
     timestamp: integer;
@@ -15,6 +24,38 @@ interface ClinicalCode {
     name: string
     docs: string
     groups: string[]
+}
+
+function get_event_counts(events, name) {
+    if (name in events) {
+	return events[name]
+    } else {
+	return []
+    }
+}
+
+function EventCountBlock({ event_count_list }: { EventCount }) {
+    return <div>
+	{event_count_list.map(event_count =>
+	    <div><b>{event_count.count}</b> {event_count.name}</div>)}
+    </div>
+}
+
+function EventCountComp({ events }: { Events }) {
+    return <div className = {record_styles.event_count}>
+	<b>Event Counts</b>
+	<div>
+	    <div className ={record_styles.side_by_side}>
+		<b>Before</b>
+		<EventCountBlock event_count_list={get_event_counts(events, "before")} />
+	    </div>
+
+	    <div className ={record_styles.side_by_side}>
+		<b>After</b>
+		<EventCountBlock event_count_list={get_event_counts(events, "after")} />	
+	    </div>
+	    </div>
+	</div>
 }
 
 function clinical_code_groups(clinical_code) {
@@ -109,8 +150,10 @@ function EpisodeComp({ episode }: { Episode }) {
     return <div className ={record_styles.episode}>
 	<div>Episode start: <Date timestamp ={episode.start_date} /></div>
 	<div>Episode end: <Date timestamp ={episode.end_date} /></div>
-	<DiagnosisBlock episode={episode} />
-	<ProcedureBlock episode={episode} />
+	<div>
+	    <DiagnosisBlock episode={episode} />
+	    <ProcedureBlock episode={episode} />
+	</div>
     </div>
 }
 
@@ -180,6 +223,7 @@ function AcsRecordComp({ record } : { AcsRecord }) {
     return <div  className ={record_styles.record}>
 	<PatientInfo record = {record} />
 	<Mortality mortality = {record.mortality} />
+	<EventCountComp events ={record.event_counts} />
 	<b>Index Spell</b>
 	<SpellComp spell = {record.index_spell} />
     </div>
@@ -188,6 +232,7 @@ function AcsRecordComp({ record } : { AcsRecord }) {
 export default function Home() {
 
     let [acs_records, setAcsRecords] = useState<AcsRecord[]>([]);
+    
 
     // Function to load the codes yaml file
     function load_file() {
