@@ -34,6 +34,7 @@ function get_event_counts(events, name) {
     }
 }
 
+
 function EventCountBlock({ event_count_list }: { EventCount }) {
     return <div>
 	{event_count_list.map(event_count =>
@@ -67,7 +68,9 @@ function clinical_code_groups(clinical_code) {
 }
 
 function clinical_code_contains_group(clinical_code: ClinicalCode, group) {
-    return clinical_code_groups(clinical_code).includes(group)
+    return clinical_code_groups(clinical_code).some(function(g) {
+	return g.includes(group)
+    })
 }
 
 function ClinicalCodeComp({ clinical_code }: { ClinicalCode }) {
@@ -371,11 +374,9 @@ export default function Home() {
 	});
 	
 	return <div>
-	    <label htmlFor="search">Search: </label>
+	    <label htmlFor="search">Search clinical code groups: </label>
 	    <input id="search" type="text" onChange={handleChange}/>
-	    <p>
-		Searching for <strong>{searchTerm}</strong>.
-	    </p>
+	    <div>Total number of records: {searched_records.length}</div>
 	    <hr />
 	    {searched_records.map(record => <AcsRecordComp record = {record}
 				       />)   
