@@ -6,6 +6,7 @@ export default function Home() {
         <ul>
             <li><Link href="/mapping">Mappings</Link></li>
             <li><Link href="/icd">Define code groups</Link></li>
-        </ul>
+            <li><Link href="/record">View ACS/PCI records</Link></li>    
+	</ul>
     )
 }
