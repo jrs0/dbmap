@@ -1,0 +1,6 @@
+.clinical_code_group {
+    font-weight: bold;
+    padding: 0.1em;
+    border: 1px solid red;
+    border-radius: 5px;
+}

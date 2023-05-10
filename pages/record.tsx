@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { invoke } from "@tauri-apps/api/tauri"
 import Link from 'next/link'
 
-import styles from '../styles/Category.module.css'
+import styles from '../styles/ClinicalCodeComp.module.css'
 
 interface Timestamp {
     timestamp: integer;
@@ -48,13 +48,12 @@ function PatientInfo({ record }: { AcsRecord }) {
 function ClinicalCodeComp({ clinical_code }: { ClinicalCode }) {
     return <span>
 	<span><b>{clinical_code.name}</b></span>
-	<span>{clinical_code.docs}</span>
-	({
-	    clinical_code.groups.map(group => <span>
-		{group},
-	    </span>)
-	})
-    </span>
+	<span>{clinical_code.docs}</span> {
+	    clinical_code.groups.map(group =>
+		<span className={styles.clinical_code_group}>
+		    {group}
+		</span>)
+	} </span>
 }
 
 function Mortality({ mortality }: { Mortality }) {
