@@ -66,6 +66,10 @@ function clinical_code_groups(clinical_code) {
     }
 }
 
+function clinical_code_contains_group(clinical_code: ClinicalCode, group) {
+    return clinical_code_groups(clinical_code).includes(group)
+}
+
 function ClinicalCodeComp({ clinical_code }: { ClinicalCode }) {
 
     return <div>
@@ -105,6 +109,7 @@ function get_primary_clinical_code(episode: Episode, name: string) {
     }
 }
 
+
 function get_secondary_clinical_codes(episode: Episode, name: string) {
     if (name in episode) {
 	return <div>{episode[name].map(clinical_code => <div>
@@ -117,6 +122,43 @@ function get_secondary_clinical_codes(episode: Episode, name: string) {
 	    None
 	</>
     }    
+}
+
+function episode_contains_clinical_code_group_anywhere(episode, group) {
+    if ("primary_diagnosis" in episode) {
+	if (clinical_code_contains_group(episode.primary_diagnosis, group)) {
+	    return true
+	}
+    }
+
+    if ("primary_procedure" in episode) {
+	if (clinical_code_contains_group(episode.primary_procedure, group)) {
+	    return true
+	}
+    }
+
+    if ("secondary_diagnoses" in episode) {
+	const found_group = episode
+	    .secondary_diagnoses
+	    .some(function(code) {
+		return clinical_code_contains_group(code, group)
+	    })
+	if (found_group) {
+	    return true
+	}
+    }
+
+    if ("secondary_procedures" in episode) {
+	const found_group = episode
+	    .secondary_procedures
+	    .some(function(code) {
+		return clinical_code_contains_group(code, group)
+	    })
+	if (found_group) {
+	    return true
+	}
+    }
+    return false
 }
 
 function ClinicalCodesBlock({ episode, diagnosis }: { Episode, boolean }) {
@@ -169,6 +211,7 @@ function SpellComp({ spell }: { Spell }) {
 	<div>Spell id: {spell.id}</div>
 	<div>Spell start: <Date timestamp ={spell.start_date} /></div>
 	<div>Spell end: <Date timestamp ={spell.end_date} /></div>
+	<div>Contains: {spell_contains_clinical_code_group_anywhere(spell, "acs_nstemi")}</div>
 	<b>Episodes</b>
 	{spell.episodes.map(episode => <div>
 	    <EpisodeComp episode = {episode} />
@@ -250,20 +293,35 @@ function AcsRecordComp({ record } : { AcsRecord }) {
     </div>
 }
 
-function clinical_code_contains_group(clinical_code, group) {
-    
-}
-
-function episode_contains_clinical_code_group_anywhere(episode, group) {
-    
-}
-
 function spell_contains_clinical_code_group_anywhere(spell, group) {
-
+    return spell.episodes.some(function(episode) {
+	return episode_contains_clinical_code_group_anywhere(episode, group)
+    })
 }
 
 function record_contains_clinical_code_group_anywhere(record, group) {
-    const index_spell = record.index_spell
+    if (spell_contains_clinical_code_group_anywhere(record.index_spell,
+						    group)) {
+	return true
+    }
+
+    let found = get_optional_array(record, "spells_after")
+	.some(function(spell) {
+	    return spell_contains_clinical_code_group_anywhere(spell, group)
+	})
+    if (found) {
+	return true
+    }
+
+    found = get_optional_array(record, "spells_before")
+	.some(function(spell) {
+	    return spell_contains_clinical_code_group_anywhere(spell, group)
+	})
+    if (found) {
+	return true
+    }
+
+    return false
 }
 
 export default function Home() {
@@ -301,9 +359,15 @@ export default function Home() {
 
 	const searched_records = acs_records.filter(function(record) {
 
-	    const terms = searchTerm.split(/[ ,]+/)
+	    if (searchTerm == "") {
+		return true;
+	    }
 	    
-	    return true;
+	    const clinical_code_groups = searchTerm.split(/[ ,]+/)
+	    return clinical_code_groups.every(function(group) {
+		return record_contains_clinical_code_group_anywhere(record,
+								    group)
+	    })
 	});
 	
 	return <div>
