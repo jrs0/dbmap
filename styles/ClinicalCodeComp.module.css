@@ -1,6 +1,28 @@
 .clinical_code_group {
     font-weight: bold;
     padding: 0.1em;
+}
+
+.spell {
     border: 1px solid red;
-    border-radius: 5px;
+    margin: 1ex;
+    padding: 1ex
+}
+
+.episode {
+    border: 1px solid green;
+    margin: 1ex;
+    padding: 1ex
+}
+
+.record {
+    border: 1px solid blue;
+    margin: 1ex;
+    padding: 1ex
+}
+
+.clinical_codes_block {
+    border: 1px solid black;
+    margin: 1ex;
+    padding: 1ex
 }

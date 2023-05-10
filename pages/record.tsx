@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { invoke } from "@tauri-apps/api/tauri"
 import Link from 'next/link'
 
-import styles from '../styles/ClinicalCodeComp.module.css'
+import record_styles from '../styles/ClinicalCodeComp.module.css'
+import styles from '../styles/Category.module.css'
+
 
 interface Timestamp {
     timestamp: integer;
@@ -15,23 +17,134 @@ interface ClinicalCode {
     groups: string[]
 }
 
+function clinical_code_groups(clinical_code) {
+    if ("groups" in clinical_code) {
+	return clinical_code.groups
+    } else {
+	return []
+    }
+}
+
+function ClinicalCodeComp({ clinical_code }: { ClinicalCode }) {
+
+    return <div>
+	<span><b>{clinical_code.name}</b></span>
+	<span>{clinical_code.docs}</span>
+	{
+	    clinical_code_groups(clinical_code).map(group =>
+		<span className={record_styles.clinical_code_group}>
+		    {group}
+		</span>)
+	}
+    </div>
+}
+
 interface Mortality {
     alive: boolean
     date_of_death: Timestamp
     cause_of_death: ClinicalCode
 }
 
-interface AcsRecord {
-    nhs_number: integer;
-    age_at_index: integer;
-    date_of_index: Timestamp;
-    presentation: string;
+interface Episode {
+    start_date: Timestamp,
+    end_date: Timestamp,
+    primary_diagnosis: ClinicalCode,
+    primary_procedure: ClinicalCode,
+    secondary_diagnoses: ClinicalCode[],
+    secondary_procedures: ClinicalCode[],
+}
+
+function get_primary_clinical_code(episode: Episode, name: string) {
+    if (name in episode) {
+	return <ClinicalCodeComp clinical_code ={episode[name]} />
+    } else {
+	return <>
+	    None
+	</>
+    }
+}
+
+function get_secondary_clinical_codes(episode: Episode, name: string) {
+    if (name in episode) {
+	return <div>{episode[name].map(clinical_code => <div>
+	    <ClinicalCodeComp clinical_code ={clinical_code} />
+	</div>
+	    )}
+	</div>
+    } else {
+	return <>
+	    None
+	</>
+    }    
+}
+
+function ClinicalCodesBlock({ episode, diagnosis }: { Episode, boolean }) {
+
+    let block_title = "Procedures"
+    let primary_name = "primary_procedure"
+    let secondary_name = "secondary_procedure"
+    if (diagnosis) {
+	block_title = "Diagnoses"
+	primary_name = "primary_diagnosis"
+	secondary_name = "secondary_diagnoses"	
+    }
+    
+    return <div className = {record_styles.clinical_codes_block}>
+	<b>{block_title}</b>
+	<div>{get_primary_clinical_code(episode, primary_name)} </div>
+	<hr/>
+	<div>{get_secondary_clinical_codes(episode, secondary_name)} </div>	
+    </div>
+}
+
+function DiagnosisBlock({ episode }: { Episode }) {
+    return <ClinicalCodesBlock episode={episode} diagnosis = {true} />
+}
+
+function ProcedureBlock({ episode }: { Episode }) {
+    return <ClinicalCodesBlock episode={episode} diagnosis = {false} />
+}
+
+function EpisodeComp({ episode }: { Episode }) {
+    return <div className ={record_styles.episode}>
+	<div>Episode start: <Date timestamp ={episode.start_date} /></div>
+	<div>Episode end: <Date timestamp ={episode.end_date} /></div>
+	<DiagnosisBlock episode={episode} />
+	<ProcedureBlock episode={episode} />
+    </div>
+}
+
+interface Spell {
+    id: string,
+    start_date: Timestamp,
+    end_date: Timestamp,
+    episodes: Episodes[],
+}
+
+function SpellComp({ spell }: { Spell }) {
+    return <div className ={record_styles.spell}>
+	<div>Spell id: {spell.id}</div>
+	<div>Spell start: <Date timestamp ={spell.start_date} /></div>
+	<div>Spell end: <Date timestamp ={spell.end_date} /></div>
+	<b>Episodes</b>
+	{spell.episodes.map(episode => <div>
+	    <EpisodeComp episode = {episode} />
+	</div>)}
+    </div>
 }
 
 function Date({ timestamp }: { Timestamp }) {
     return <span>
-    {timestamp.readable}
+	{timestamp.readable}
     </span>
+}
+
+interface AcsRecord {
+    nhs_number: integer,
+    age_at_index: integer,
+    date_of_index: Timestamp,
+    presentation: string,
+    index_spell: Spell,
 }
 
 function PatientInfo({ record }: { AcsRecord }) {
@@ -43,17 +156,6 @@ function PatientInfo({ record }: { AcsRecord }) {
 	<div>Presentation: {record.presentation}</div>
 	<div>Inclusion trigger: {record.inclusion_trigger}</div>
     </div>
-}
-
-function ClinicalCodeComp({ clinical_code }: { ClinicalCode }) {
-    return <span>
-	<span><b>{clinical_code.name}</b></span>
-	<span>{clinical_code.docs}</span> {
-	    clinical_code.groups.map(group =>
-		<span className={styles.clinical_code_group}>
-		    {group}
-		</span>)
-	} </span>
 }
 
 function Mortality({ mortality }: { Mortality }) {
@@ -72,6 +174,15 @@ function Mortality({ mortality }: { Mortality }) {
 	       </div>
 	</div>
     }
+}
+
+function AcsRecordComp({ record } : { AcsRecord }) {
+    return <div  className ={record_styles.record}>
+	<PatientInfo record = {record} />
+	<Mortality mortality = {record.mortality} />
+	<b>Index Spell</b>
+	<SpellComp spell = {record.index_spell} />
+    </div>
 }
 
 export default function Home() {
@@ -102,11 +213,7 @@ export default function Home() {
 	</div>
     } else {
 	return <div> {
-	    acs_records.map(record => <div>
-		<PatientInfo record = {record} />
-		<Mortality mortality = {record.mortality} />
-	    </div>)
+	    acs_records.map(record => <AcsRecordComp record = {record} />)   
 	} </div>
-
     }
 }
