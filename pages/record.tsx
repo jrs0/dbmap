@@ -10,7 +10,7 @@ import InfiniteScroll from 'react-infinite-scroll-component';
 
 interface EventCount {
     name: string,
-    count: integer,
+    count: number,
 }
 
 interface Events {
@@ -19,8 +19,8 @@ interface Events {
 }
 
 interface Timestamp {
-    timestamp: integer;
-    readable: string;
+    timestamp: number,
+    readable: string,
 }
 
 interface ClinicalCode {
@@ -29,7 +29,16 @@ interface ClinicalCode {
     groups: string[]
 }
 
-function get_event_counts(events, name) {
+// From: https://stackoverflow.com/questions/60291002/
+// can-typescript-restrict-keyof-to-a-list-of-properties-of-a-particular-type
+// This type returns all keys that have a value of type string
+type TypedKeyOf<KeyType, T> = {
+    [K in keyof T]:
+    T[K] extends KeyType ? K : never
+}[keyof T]
+
+
+function get_event_counts(events: Events, name: keyof Events) {
     if (name in events) {
 	return events[name]
     } else {
@@ -37,15 +46,15 @@ function get_event_counts(events, name) {
     }
 }
 
-
-function EventCountBlock({ event_count_list }: { EventCount }) {
+function EventCountBlock({ event_count_list }:
+			 { event_count_list: EventCount[] }) {
     return <div>
 	{event_count_list.map(event_count =>
 	    <div><b>{event_count.count}</b> {event_count.name}</div>)}
     </div>
 }
 
-function EventCountComp({ events }: { Events }) {
+function EventCountComp({ events }: { events: Events }) {
     return <div className = {record_styles.event_count}>
 	<b>Event Counts</b>
 	<div>
@@ -62,7 +71,7 @@ function EventCountComp({ events }: { Events }) {
 	</div>
 }
 
-function clinical_code_groups(clinical_code) {
+function clinical_code_groups(clinical_code: ClinicalCode) {
     if ("groups" in clinical_code) {
 	return clinical_code.groups
     } else {
@@ -70,13 +79,16 @@ function clinical_code_groups(clinical_code) {
     }
 }
 
-function clinical_code_contains_group(clinical_code: ClinicalCode, group) {
-    return clinical_code_groups(clinical_code).some(function(g) {
-	return g.includes(group)
+function clinical_code_contains_group(clinical_code: ClinicalCode,
+				      group_substring: string) {
+    return clinical_code_groups(clinical_code).some(function(group) {
+	return group.includes(group_substring)
     })
 }
 
-function ClinicalCodeComp({ clinical_code, group_style }: { ClinicalCode, string }) {
+function ClinicalCodeComp({ clinical_code, group_style }:
+			  { clinical_code: ClinicalCode,
+			    group_style: string }) {
 
     return <span>
 	{
@@ -105,12 +117,13 @@ interface Episode {
     secondary_procedures: ClinicalCode[],
 }
 
-function PrimaryClinicalCode(episode: Episode, name: string,
+function PrimaryClinicalCode(episode: Episode,
+			     name: TypedKeyOf<ClinicalCode, Episode>,
 			     group_style: string) {
     if (name in episode) {
 	return <ClinicalCodeComp
-	clinical_code ={episode[name]}
-	group_style ={group_style} />
+		   clinical_code ={episode[name]}
+		   group_style ={group_style} />
     } else {
 	return <>
 	    None
@@ -119,7 +132,8 @@ function PrimaryClinicalCode(episode: Episode, name: string,
 }
 
 
-function SecondaryClinicalCodes(episode: Episode, name: string,
+function SecondaryClinicalCodes(episode: Episode,
+				name: TypedKeyOf<ClinicalCode[], Episode>,
 				group_style: string) {
     if (name in episode) {
 	return <div>{episode[name].map(clinical_code => <div>
@@ -136,7 +150,9 @@ function SecondaryClinicalCodes(episode: Episode, name: string,
     }    
 }
 
-function get_optional_array(record, key) {
+function get_optional_array<T extends object, K>(
+    record: T,
+    key: TypedKeyOf<ArrayLike<K>, T>) {
     if (key in record) {
 	return record[key]
     } else {
@@ -144,15 +160,16 @@ function get_optional_array(record, key) {
     }
 }
 
-function append_to_set(set_to_modify, set_to_append) {
+function append_to_set(set_to_modify: Set<string>,
+		       set_to_append: ArrayLike<string> | Set<string>) {
     Array.from(set_to_append).forEach(item => set_to_modify.add(item))
 }
 
 function get_clinical_code_groups(episode: Episode, diagnosis: boolean) {
-    let clinical_code_groups = new Set()
+    let clinical_code_groups = new Set<string>()
 
-    let primary = "primary_procedure"
-    let secondaries = "secondary_procedures"
+    let primary: keyof Episode = "primary_procedure"
+    let secondaries: keyof Episode = "secondary_procedures"
     if (diagnosis) {
 	primary = "primary_diagnosis"
 	secondaries = "secondary_diagnoses"
@@ -170,7 +187,8 @@ function get_clinical_code_groups(episode: Episode, diagnosis: boolean) {
     return clinical_code_groups
 }
 
-function episode_contains_clinical_code_group_anywhere(episode, group) {
+function episode_contains_clinical_code_group_anywhere(episode: Episode,
+						       group: string) {
     if ("primary_diagnosis" in episode) {
 	if (clinical_code_contains_group(episode.primary_diagnosis, group)) {
 	    return true
@@ -207,11 +225,13 @@ function episode_contains_clinical_code_group_anywhere(episode, group) {
     return false
 }
 
-function ClinicalCodesBlock({ episode, diagnosis}: { Episode, boolean }) {
+function ClinicalCodesBlock({ episode, diagnosis}:
+			    { episode: Episode,
+			      diagnosis: boolean }) {
 
     let block_title = "Procedures"
-    let primary_name = "primary_procedure"
-    let secondary_name = "secondary_procedure"
+    let primary_name: keyof Episode = "primary_procedure"
+    let secondary_name: keyof Episode = "secondary_procedures"
     let group_style = "procedure_group"
     if (diagnosis) {
 	block_title = "Diagnoses"
@@ -230,17 +250,17 @@ function ClinicalCodesBlock({ episode, diagnosis}: { Episode, boolean }) {
     </div>
 }
 
-function DiagnosisBlock({ episode }: { Episode }) {
+function DiagnosisBlock({ episode }: { episode: Episode }) {
     return <ClinicalCodesBlock
 	       episode={episode}
 	       diagnosis = {true} />
 }
 
-function ProcedureBlock({ episode }: { Episode }) {
+function ProcedureBlock({ episode }: { episode: Episode }) {
     return <ClinicalCodesBlock episode={episode} diagnosis = {false} />
 }
 
-function EpisodeComp({ episode }: { Episode }) {
+function EpisodeComp({ episode }: { episode: Episode }) {
     return <div className ={record_styles.episode}>
 	<div>Episode start: <Date timestamp ={episode.start_date} /></div>
 	<div>Episode end: <Date timestamp ={episode.end_date} /></div>
@@ -255,10 +275,10 @@ interface Spell {
     id: string,
     start_date: Timestamp,
     end_date: Timestamp,
-    episodes: Episodes[],
+    episodes: Episode[],
 }
 
-function SpellComp({ spell }: { Spell }) {
+function SpellComp({ spell }: { spell: Spell }) {
     return <div className ={record_styles.spell}>
 	<div>Spell id: {spell.id}</div>
 	<div>Spell start: <Date timestamp ={spell.start_date} /></div>
@@ -271,7 +291,7 @@ function SpellComp({ spell }: { Spell }) {
     </div>
 }
 
-function Date({ timestamp }: { Timestamp }) {
+function Date({ timestamp }: { timestamp: Timestamp }) {
     return <span>
 	{timestamp.readable}
     </span>
@@ -279,13 +299,18 @@ function Date({ timestamp }: { Timestamp }) {
 
 interface AcsRecord {
     nhs_number: string,
-    age_at_index: integer,
+    age_at_index: number,
     date_of_index: Timestamp,
     presentation: string,
+    inclusion_trigger: string,
     index_spell: Spell,
+    spells_after: Spell[],
+    spells_before: Spell[],
+    mortality: Mortality,
+    event_counts: Events,
 }
 
-function Presentation({ record }, { AcsRecord }) {
+function Presentation({ record }: { record: AcsRecord }) {
     if (record.presentation === "STEMI") {
 	return <span className = {`${record_styles.tag} ${record_styles.stemi}`}>
 	    STEMI
@@ -297,7 +322,7 @@ function Presentation({ record }, { AcsRecord }) {
     }
 }
 
-function Trigger({ record }, { AcsRecord }) {
+function Trigger({ record }: { record: AcsRecord }) {
     if (record.inclusion_trigger === "ACS") {
 	return <span className = {`${record_styles.tag} ${record_styles.acs}`}>
 	    ACS
@@ -309,8 +334,7 @@ function Trigger({ record }, { AcsRecord }) {
     }
 }
 
-
-function PatientInfo({ record }: { AcsRecord }) {
+function PatientInfo({ record }: { record: AcsRecord }) {
     return <div className ={record_styles.patient_info}>
 	<b>Patient <Presentation record = {record} /><Trigger record={record} /> Age {record.age_at_index} -- Index date: <Date timestamp = {record.date_of_index} /> -- {record.nhs_number} </b>
     </div>
@@ -318,13 +342,15 @@ function PatientInfo({ record }: { AcsRecord }) {
 
 function get_cause_of_death(mortality: Mortality) {
     if ("cause_of_death" in mortality) {
-	return <ClinicalCodeComp clinical_code ={mortality.cause_of_death} />
+	return <ClinicalCodeComp
+		   clinical_code ={mortality.cause_of_death}
+		   group_style ="diagnosis_group" />
     } else {
 	return <span>Unknown</span>
     }
 }
 
-function Mortality({ mortality }: { Mortality }) {
+function Mortality({ mortality }: { mortality: Mortality }) {
     
     let alive = "Alive"
     if (mortality.alive) {
@@ -340,14 +366,14 @@ function Mortality({ mortality }: { Mortality }) {
     }
 }
 
-function CollapsibleTrigger({ name }: { string }) {
+function CollapsibleTrigger({ name }: { name: string }) {
     return <div className = {record_styles.collapsible_trigger}>
 	{name}
     </div>
 }
 
 function get_all_clinical_code_groups(spell: Spell, diagnosis: boolean) {
-    let clinical_code_groups = new Set()
+    let clinical_code_groups = new Set<string>()
     if ("episodes" in spell) {
 	spell.episodes
 	     .map(episode => {
@@ -360,7 +386,7 @@ function get_all_clinical_code_groups(spell: Spell, diagnosis: boolean) {
     
 }
 
-function IndexSpellSummary({ index_spell }: { Spell }) {
+function IndexSpellSummary({ index_spell }: { index_spell: Spell }) {
     return <div className = {record_styles.collapsible_trigger}>
     Index Spell: {
 	Array.from(get_all_clinical_code_groups(index_spell, true))
@@ -377,16 +403,16 @@ function IndexSpellSummary({ index_spell }: { Spell }) {
     </div>
 }
 
-function AcsRecordComp({ record } : { AcsRecord }) {
+function AcsRecordComp({ record } : { record: AcsRecord }) {
     return <div  className ={record_styles.record}>
 	<PatientInfo record = {record} />
 	<Mortality mortality = {record.mortality} />
 	<Collapsible
 	    className ={record_styles.collapsible}
 	    contentInnerClassName={record_styles.collapsible_content_inner}
-    trigger=<CollapsibleTrigger name="Event Counts" />
-    lazyRender={true}>
-    <EventCountComp events ={record.event_counts} />
+	    trigger=<CollapsibleTrigger name="Event Counts" />
+	    lazyRender={true}>
+	    <EventCountComp events ={record.event_counts} />
 	</Collapsible>
 	<Collapsible
 	    trigger=<IndexSpellSummary index_spell ={record.index_spell} />
@@ -399,9 +425,10 @@ function AcsRecordComp({ record } : { AcsRecord }) {
 	    contentInnerClassName={record_styles.collapsible_content_inner}
 	    lazyRender={true}>
 	    <div> {
-		get_optional_array(record, "spells_after").map(spell =>
-		    <SpellComp spell = {spell} />
-		)
+		get_optional_array(record, "spells_after" as keyof AcsRecord)
+		    .map(spell =>
+			<SpellComp spell = {spell} />
+		    )
 	    } </div>
 	</Collapsible>
 	<Collapsible
@@ -409,9 +436,10 @@ function AcsRecordComp({ record } : { AcsRecord }) {
 	    contentInnerClassName={record_styles.collapsible_content_inner}
 	    lazyRender={true}>
 	    <div> {
-		get_optional_array(record, "spells_before").map(spell =>
-		    <SpellComp spell = {spell} />
-		)
+		get_optional_array(record, "spells_before" as keyof AcsRecord)
+		    .map(spell =>
+			<SpellComp spell = {spell} />
+		    )
 	    } </div>	    
 	</Collapsible>	
     </div>
@@ -429,7 +457,7 @@ function contains_clinical_code_group_anywhere(record, group) {
 	return true
     }
 
-    let found = get_optional_array(record, "spells_after")
+    let found = get_optional_array(record, "spells_after" as keyof AcsRecord)
 	.some(function(spell) {
 	    return spell_contains_clinical_code_group_anywhere(spell, group)
 	})
@@ -437,7 +465,7 @@ function contains_clinical_code_group_anywhere(record, group) {
 	return true
     }
 
-    found = get_optional_array(record, "spells_before")
+    found = get_optional_array(record, "spells_before" as keyof AcsRecord)
 	.some(function(spell) {
 	    return spell_contains_clinical_code_group_anywhere(spell, group)
 	})
