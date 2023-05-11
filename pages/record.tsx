@@ -236,19 +236,47 @@ interface AcsRecord {
     index_spell: Spell,
 }
 
+function Presentation({ record }, { AcsRecord }) {
+    if (record.presentation === "STEMI") {
+	return <span className = {`${record_styles.tag} ${record_styles.stemi}`}>
+	    STEMI
+	</span>
+    } else {
+	return <span className = {`${record_styles.tag} ${record_styles.nstemi}`}>
+	    NSTEMI
+	</span>
+    }
+}
+
+function Trigger({ record }, { AcsRecord }) {
+    if (record.inclusion_trigger === "ACS") {
+	return <span className = {`${record_styles.tag} ${record_styles.acs}`}>
+	    ACS
+	</span>
+    } else {
+	return <span className = {`${record_styles.tag} ${record_styles.pci}`}>
+	    PCI
+	</span>
+    }
+}
+
+
 function PatientInfo({ record }: { AcsRecord }) {
     return <div>
-	<b>Patient Information</b>
-	<div>NHS number: {record.nhs_number}</div>
-	<div>Age at index: {record.age_at_index}</div>
-	<div>Date of index: <Date timestamp = {record.date_of_index}/></div>
-	<div>Presentation: {record.presentation}</div>
-	<div>Inclusion trigger: {record.inclusion_trigger}</div>
+	<b>Patient {record.nhs_number} (index date: <Date timestamp = {record.date_of_index} />, age {record.age_at_index}) <Presentation record = {record} /><Trigger record={record} /></b>
     </div>
 }
 
-function Mortality({ mortality }: { Mortality }) {
+function get_cause_of_death(mortality: Mortality) {
+    if ("cause_of_death" in mortality) {
+	return <ClinicalCodeComp clinical_code ={mortality.cause_of_death} />
+    } else {
+	return <span>Unknown</span>
+    }
+}
 
+function Mortality({ mortality }: { Mortality }) {
+    
     let alive = "Alive"
     if (mortality.alive) {
 	return <div>
@@ -260,7 +288,7 @@ function Mortality({ mortality }: { Mortality }) {
 	       <div>Date of death:
 		   <Date timestamp = {mortality.date_of_death} />
 	       </div>
-	       <div>Cause of death: <ClinicalCodeComp clinical_code ={mortality.cause_of_death} />
+	       <div>Cause of death: {get_cause_of_death(mortality)}
 	       </div>
 	</div>
     }
@@ -278,8 +306,9 @@ function AcsRecordComp({ record } : { AcsRecord }) {
     return <div  className ={record_styles.record}>
 	<PatientInfo record = {record} />
 	<Mortality mortality = {record.mortality} />
-	<EventCountComp events ={record.event_counts} />
 	{/*
+	    <EventCountComp events ={record.event_counts} />
+
 	    <b>Index Spell</b>
 	    <SpellComp spell = {record.index_spell} />
 	    <b>Spells after</b>

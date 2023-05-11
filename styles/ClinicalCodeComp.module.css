@@ -40,3 +40,26 @@
     vertical-align: top;
     margin: 1ex
 }
+
+.tag {
+    margin-left: 0.5ex;
+    padding-left: 0.5ex;
+    margin-right: 0.5ex;
+    padding-right: 0.5ex;
+}
+
+.nstemi {
+    background-color: orange;
+}
+
+.stemi {
+    background-color: red;
+}
+
+.acs {
+    background-color: cyan;
+}
+
+.pci {
+    background-color: green;
+}
