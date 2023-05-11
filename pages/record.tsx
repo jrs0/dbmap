@@ -449,19 +449,24 @@ function AcsRecordComp({ record } : { record: AcsRecord }) {
     </div>
 }
 
-function spell_contains_clinical_code_group_anywhere(spell, group) {
+function spell_contains_clinical_code_group_anywhere(spell: Spell,
+						     group: string) {
     return spell.episodes.some(function(episode) {
 	return episode_contains_clinical_code_group_anywhere(episode, group)
     })
 }
 
-function contains_clinical_code_group_anywhere(record, group) {
+function contains_clinical_code_group_anywhere(record: AcsRecord,
+					       group: string) {
     if (spell_contains_clinical_code_group_anywhere(record.index_spell,
 						    group)) {
 	return true
     }
 
-    let found = get_optional_array(record, "spells_after" as keyof AcsRecord)
+
+    let spells_after_key: keyof AcsRecord = "spells_after";
+    let found = get_optional_array<AcsRecord, Spell>(record,
+						     spells_after_key)
 	.some(function(spell) {
 	    return spell_contains_clinical_code_group_anywhere(spell, group)
 	})
@@ -469,7 +474,9 @@ function contains_clinical_code_group_anywhere(record, group) {
 	return true
     }
 
-    found = get_optional_array(record, "spells_before" as keyof AcsRecord)
+    let spells_before_key: keyof AcsRecord = "spells_before";
+    found = get_optional_array<AcsRecord, Spell>(record,
+						 spells_before_key)
 	.some(function(spell) {
 	    return spell_contains_clinical_code_group_anywhere(spell, group)
 	})
