@@ -37,8 +37,9 @@
 }
 
 .tag {
-    margin-left: 0.5ex;
-    padding-left: 0.5ex;
+    display:inline-block;
+    margin: 0.25ex;
+    padding: 0.2ex;
     margin-right: 0.5ex;
     padding-right: 0.5ex;
 }
@@ -62,10 +63,13 @@ when using lazyRender (collapsible doesn't open immediately)
     margin-bottom: 0.5ex;
 }
 
-.clinical_code_group {
+.diagnosis_group {
     background-color: pink;
 }
 
+.procedure_group {
+    background-color: LightGreen;
+}
 
 .nstemi {
     background-color: orange;

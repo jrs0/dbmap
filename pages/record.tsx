@@ -76,12 +76,12 @@ function clinical_code_contains_group(clinical_code: ClinicalCode, group) {
     })
 }
 
-function ClinicalCodeComp({ clinical_code }: { ClinicalCode }) {
+function ClinicalCodeComp({ clinical_code, group_style }: { ClinicalCode, string }) {
 
     return <span>
 	{
 	    clinical_code_groups(clinical_code).map(group =>
-		<span className={`${record_styles.tag} ${record_styles.clinical_code_group}`}>
+		<span className={`${record_styles.tag} ${record_styles[group_style]}`}>
 		    {group}
 		</span>)
 	}
@@ -105,9 +105,12 @@ interface Episode {
     secondary_procedures: ClinicalCode[],
 }
 
-function get_primary_clinical_code(episode: Episode, name: string) {
+function PrimaryClinicalCode(episode: Episode, name: string,
+			     group_style: string) {
     if (name in episode) {
-	return <ClinicalCodeComp clinical_code ={episode[name]} />
+	return <ClinicalCodeComp
+	clinical_code ={episode[name]}
+	group_style ={group_style} />
     } else {
 	return <>
 	    None
@@ -116,10 +119,13 @@ function get_primary_clinical_code(episode: Episode, name: string) {
 }
 
 
-function get_secondary_clinical_codes(episode: Episode, name: string) {
+function SecondaryClinicalCodes(episode: Episode, name: string,
+				group_style: string) {
     if (name in episode) {
 	return <div>{episode[name].map(clinical_code => <div>
-	    <ClinicalCodeComp clinical_code ={clinical_code} />
+	    <ClinicalCodeComp
+		clinical_code ={clinical_code}
+		group_style ={group_style} />
 	</div>
 	    )}
 	</div>
@@ -128,6 +134,40 @@ function get_secondary_clinical_codes(episode: Episode, name: string) {
 	    None
 	</>
     }    
+}
+
+function get_optional_array(record, key) {
+    if (key in record) {
+	return record[key]
+    } else {
+	return []
+    }
+}
+
+function append_to_set(set_to_modify, set_to_append) {
+    Array.from(set_to_append).forEach(item => set_to_modify.add(item))
+}
+
+function get_clinical_code_groups(episode: Episode, diagnosis: boolean) {
+    let clinical_code_groups = new Set()
+
+    let primary = "primary_procedure"
+    let secondaries = "secondary_procedures"
+    if (diagnosis) {
+	primary = "primary_diagnosis"
+	secondaries = "secondary_diagnoses"
+    }
+    
+    if (primary in episode) {
+	let groups = get_optional_array(episode[primary], "groups")
+	append_to_set(clinical_code_groups, groups)
+    }
+    get_optional_array(episode, secondaries)
+	.map(clinical_code => {
+	    let groups = get_optional_array(clinical_code, "groups")
+	    append_to_set(clinical_code_groups, groups)
+	})
+    return clinical_code_groups
 }
 
 function episode_contains_clinical_code_group_anywhere(episode, group) {
@@ -167,27 +207,33 @@ function episode_contains_clinical_code_group_anywhere(episode, group) {
     return false
 }
 
-function ClinicalCodesBlock({ episode, diagnosis }: { Episode, boolean }) {
+function ClinicalCodesBlock({ episode, diagnosis}: { Episode, boolean }) {
 
     let block_title = "Procedures"
     let primary_name = "primary_procedure"
     let secondary_name = "secondary_procedure"
+    let group_style = "procedure_group"
     if (diagnosis) {
 	block_title = "Diagnoses"
 	primary_name = "primary_diagnosis"
 	secondary_name = "secondary_diagnoses"	
+	group_style = "diagnosis_group"
     }
-    
+
     return <div className = {record_styles.clinical_codes_block}>
 	<b>{block_title}</b>
-	<div>{get_primary_clinical_code(episode, primary_name)} </div>
+	<div>{PrimaryClinicalCode(episode, primary_name, group_style)}
+	</div>
 	<hr/>
-	<div>{get_secondary_clinical_codes(episode, secondary_name)} </div>	
+	<div>{SecondaryClinicalCodes(episode, secondary_name, group_style)}
+	</div>	
     </div>
 }
 
 function DiagnosisBlock({ episode }: { Episode }) {
-    return <ClinicalCodesBlock episode={episode} diagnosis = {true} />
+    return <ClinicalCodesBlock
+	       episode={episode}
+	       diagnosis = {true} />
 }
 
 function ProcedureBlock({ episode }: { Episode }) {
@@ -294,27 +340,40 @@ function Mortality({ mortality }: { Mortality }) {
     }
 }
 
-function get_optional_array(record, key) {
-    if (key in record) {
-	return record[key]
-    } else {
-	return []
-    }
-}
-
 function CollapsibleTrigger({ name }: { string }) {
     return <div className = {record_styles.collapsible_trigger}>
 	{name}
     </div>
 }
 
-function get_episode_diagnosis_group_list(episode: Episode) {
+function get_all_clinical_code_groups(spell: Spell, diagnosis: boolean) {
+    let clinical_code_groups = new Set()
+    if ("episodes" in spell) {
+	spell.episodes
+	     .map(episode => {
+		 let episode_groups = get_clinical_code_groups(episode,
+							       diagnosis)
+		 append_to_set(clinical_code_groups, episode_groups)
+	     })
+    }
+    return clinical_code_groups
     
 }
 
 function IndexSpellSummary({ index_spell }: { Spell }) {
     return <div className = {record_styles.collapsible_trigger}>
-	Index Spell: 
+    Index Spell: {
+	Array.from(get_all_clinical_code_groups(index_spell, true))
+	     .map(group => <span className={`${record_styles.tag} ${record_styles.diagnosis_group}`}>
+		 {group}
+	     </span>)
+    }
+    {
+	Array.from(get_all_clinical_code_groups(index_spell, false))
+	     .map(group => <span className={`${record_styles.tag} ${record_styles.procedure_group}`}>
+		 {group}
+	     </span>)
+    }
     </div>
 }
 
