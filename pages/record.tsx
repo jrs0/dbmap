@@ -487,13 +487,33 @@ export default function Home() {
 	</div>
     } else {
 
+	const individual_search_terms = searchTerm.split(/[ ,]+/)
+	let include_groups = individual_search_terms
+	    .filter(function(term) {
+		return term.charAt(0) !== "!"
+	    })
+	
+	let exclude_groups = individual_search_terms
+	    .filter(function(term) {
+		return term.charAt(0) === "!"
+	    }).map(function(term) {
+		return term.replace("!", '')
+	    })
+
+	
+	console.log("include", include_groups)
+	console.log("exclude", exclude_groups)
+
+	
 	const searched_records = acs_records.filter(function(record) {
 
 	    if (searchTerm == "") {
 		return true;
 	    }
 	    
-	    const clinical_code_groups = searchTerm.split(/[ ,]+/)
+	    return true
+	    
+	    
 	    return clinical_code_groups.every(function(group) {
 		return record_contains_clinical_code_group_anywhere(record,
 								    group)
