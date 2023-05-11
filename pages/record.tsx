@@ -258,8 +258,9 @@ function Mortality({ mortality }: { Mortality }) {
 	return <div>
 	    <b>Mortality</b>:
 	       <div>Date of death:
-		   <div><Date timestamp = {mortality.date_of_death} /></div>
-		   <div><ClinicalCodeComp clinical_code ={mortality.cause_of_death} /></div>
+		   <Date timestamp = {mortality.date_of_death} />
+	       </div>
+	       <div>Cause of death: <ClinicalCodeComp clinical_code ={mortality.cause_of_death} />
 	       </div>
 	</div>
     }
@@ -278,20 +279,21 @@ function AcsRecordComp({ record } : { AcsRecord }) {
 	<PatientInfo record = {record} />
 	<Mortality mortality = {record.mortality} />
 	<EventCountComp events ={record.event_counts} />
-	<b>Index Spell</b>
-	<SpellComp spell = {record.index_spell} />
-	<b>Spells after</b>
-	<div> {
+	{/*
+	    <b>Index Spell</b>
+	    <SpellComp spell = {record.index_spell} />
+	    <b>Spells after</b>
+	    <div> {
 	    get_optional_array(record, "spells_after").map(spell =>
-		<SpellComp spell = {spell} />
+	    <SpellComp spell = {spell} />
 	    )
-	} </div>
-	<b>Spells before</b>
-	<div> {
+	    } </div>
+	    <b>Spells before</b>
+	    <div> {
 	    get_optional_array(record, "spells_before").map(spell =>
-		<SpellComp spell = {spell} />
+	    <SpellComp spell = {spell} />
 	    )
-	} </div>
+	    } </div> */}
 
     </div>
 }
