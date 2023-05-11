@@ -43,6 +43,13 @@
     padding-right: 0.5ex;
 }
 
+.collapsible_trigger:hover {
+    background-color: gray;
+    transition: 0.2s;
+    cursor: pointer;
+}
+
+
 .patient_info {
     margin-bottom: 0.5ex;
 }

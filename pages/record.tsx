@@ -302,18 +302,40 @@ function get_optional_array(record, key) {
     }
 }
 
+function CollapsibleTrigger({ name }: { string }) {
+    return <div className = {record_styles.collapsible_trigger}>
+	{name}
+    </div>
+}
+
 function AcsRecordComp({ record } : { AcsRecord }) {
     return <div  className ={record_styles.record}>
 	<PatientInfo record = {record} />
 	<Mortality mortality = {record.mortality} />
-	<Collapsible trigger="Details" lazyRender={true}>
+	<Collapsible
+	    className ={record_styles.collapsible}
+	    trigger=<CollapsibleTrigger name="Event Counts" />
+	    lazyRender={true}>
 	    <EventCountComp events ={record.event_counts} />
+	</Collapsible>
+	<Collapsible
+	    trigger=<CollapsibleTrigger name="Index Spell" />
+	    lazyRender={true}>
 	    <SpellComp spell = {record.index_spell} />
+	</Collapsible>
+	<Collapsible
+	    trigger=<CollapsibleTrigger name="Spells After" />
+	    lazyRender={true}>
 	    <div> {
 		get_optional_array(record, "spells_after").map(spell =>
 		    <SpellComp spell = {spell} />
 		)
-	    } </div>	    
+	    } </div>
+	</Collapsible>
+	<Collapsible
+	    trigger=<CollapsibleTrigger name="Spells Before" />
+
+	    lazyRender={true}>
 	    <div> {
 		get_optional_array(record, "spells_before").map(spell =>
 		    <SpellComp spell = {spell} />
