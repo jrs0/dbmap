@@ -314,17 +314,20 @@ function AcsRecordComp({ record } : { AcsRecord }) {
 	<Mortality mortality = {record.mortality} />
 	<Collapsible
 	    className ={record_styles.collapsible}
-	    trigger=<CollapsibleTrigger name="Event Counts" />
-	    lazyRender={true}>
-	    <EventCountComp events ={record.event_counts} />
+	    contentInnerClassName={record_styles.collapsible_content_inner}
+    trigger=<CollapsibleTrigger name="Event Counts" />
+    lazyRender={true}>
+    <EventCountComp events ={record.event_counts} />
 	</Collapsible>
 	<Collapsible
 	    trigger=<CollapsibleTrigger name="Index Spell" />
+	    contentInnerClassName={record_styles.collapsible_content_inner}
 	    lazyRender={true}>
 	    <SpellComp spell = {record.index_spell} />
 	</Collapsible>
 	<Collapsible
 	    trigger=<CollapsibleTrigger name="Spells After" />
+	    contentInnerClassName={record_styles.collapsible_content_inner}
 	    lazyRender={true}>
 	    <div> {
 		get_optional_array(record, "spells_after").map(spell =>
@@ -334,7 +337,7 @@ function AcsRecordComp({ record } : { AcsRecord }) {
 	</Collapsible>
 	<Collapsible
 	    trigger=<CollapsibleTrigger name="Spells Before" />
-
+	    contentInnerClassName={record_styles.collapsible_content_inner}
 	    lazyRender={true}>
 	    <div> {
 		get_optional_array(record, "spells_before").map(spell =>

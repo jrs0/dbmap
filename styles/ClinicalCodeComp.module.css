@@ -43,6 +43,14 @@
     padding-right: 0.5ex;
 }
 
+/* This is required to fix this issue:
+https://github.com/glennflanagan/react-collapsible/issues/36
+when using lazyRender (collapsible doesn't open immediately)
+*/
+.collapsible_content_inner {
+    border: 1px solid transparent;
+}
+
 .collapsible_trigger:hover {
     background-color: gray;
     transition: 0.2s;
