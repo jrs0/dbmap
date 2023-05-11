@@ -308,6 +308,16 @@ function CollapsibleTrigger({ name }: { string }) {
     </div>
 }
 
+function get_episode_diagnosis_group_list(episode: Episode) {
+    
+}
+
+function IndexSpellSummary({ index_spell }: { Spell }) {
+    return <div className = {record_styles.collapsible_trigger}>
+	Index Spell: 
+    </div>
+}
+
 function AcsRecordComp({ record } : { AcsRecord }) {
     return <div  className ={record_styles.record}>
 	<PatientInfo record = {record} />
@@ -320,7 +330,7 @@ function AcsRecordComp({ record } : { AcsRecord }) {
     <EventCountComp events ={record.event_counts} />
 	</Collapsible>
 	<Collapsible
-	    trigger=<CollapsibleTrigger name="Index Spell" />
+	    trigger=<IndexSpellSummary index_spell ={record.index_spell} />
 	    contentInnerClassName={record_styles.collapsible_content_inner}
 	    lazyRender={true}>
 	    <SpellComp spell = {record.index_spell} />
