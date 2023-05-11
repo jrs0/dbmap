@@ -364,6 +364,8 @@ export default function Home() {
     const [hasMore, setHasMore] = useState(true);
     
     const handleChange = event => {
+	setDisplayLimit(20)
+	setHasMore(true)
 	setSearchTerm(event.target.value);
     };
     
@@ -435,7 +437,7 @@ export default function Home() {
 	    loader={<h4>Loading...</h4>}
 	    endMessage={
 		<p style={{ textAlign: 'center' }}>
-		    <b>Yay! You have seen it all</b>
+		    <b>You have seen all records!</b>
 		</p>
 	    }
 	>
