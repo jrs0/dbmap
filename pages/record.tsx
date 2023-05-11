@@ -423,7 +423,7 @@ function spell_contains_clinical_code_group_anywhere(spell, group) {
     })
 }
 
-function record_contains_clinical_code_group_anywhere(record, group) {
+function contains_clinical_code_group_anywhere(record, group) {
     if (spell_contains_clinical_code_group_anywhere(record.index_spell,
 						    group)) {
 	return true
@@ -511,13 +511,21 @@ export default function Home() {
 		return true;
 	    }
 	    
-	    return true
+	    let included_groups_anywhere = include_groups
+		.every(function(group) {
+		    return contains_clinical_code_group_anywhere(record,
+								 group)
+		})
 	    
+	    let excluded_groups_nowhere =
+		exclude_groups.every(function(group) {
+		    return !contains_clinical_code_group_anywhere(record,
+								  group)
+		})
+
+	    return included_groups_anywhere && excluded_groups_nowhere
+
 	    
-	    return clinical_code_groups.every(function(group) {
-		return record_contains_clinical_code_group_anywhere(record,
-								    group)
-	    })
 	});
 
 	function fetchData() {
