@@ -5,6 +5,9 @@ import Link from 'next/link'
 import record_styles from '../styles/ClinicalCodeComp.module.css'
 import styles from '../styles/Category.module.css'
 
+import Collapsible from 'react-collapsible';
+import InfiniteScroll from 'react-infinite-scroll-component';
+
 interface EventCount {
     name: string,
     count: integer,
@@ -75,16 +78,16 @@ function clinical_code_contains_group(clinical_code: ClinicalCode, group) {
 
 function ClinicalCodeComp({ clinical_code }: { ClinicalCode }) {
 
-    return <div>
-	<span><b>{clinical_code.name}</b></span>
-	<span>{clinical_code.docs}</span>
+    return <span>
 	{
 	    clinical_code_groups(clinical_code).map(group =>
-		<span className={record_styles.clinical_code_group}>
+		<span className={`${record_styles.tag} ${record_styles.clinical_code_group}`}>
 		    {group}
 		</span>)
 	}
-    </div>
+	<span className ={record_styles.tag}><b>{clinical_code.name}</b></span>
+	<span>{clinical_code.docs}</span>
+    </span>
 }
 
 interface Mortality {
@@ -262,8 +265,8 @@ function Trigger({ record }, { AcsRecord }) {
 
 
 function PatientInfo({ record }: { AcsRecord }) {
-    return <div>
-	<b>Patient {record.nhs_number} (index date: <Date timestamp = {record.date_of_index} />, age {record.age_at_index}) <Presentation record = {record} /><Trigger record={record} /></b>
+    return <div className ={record_styles.patient_info}>
+	<b>Patient <Presentation record = {record} /><Trigger record={record} /> Age {record.age_at_index} -- Index date: <Date timestamp = {record.date_of_index} /> -- {record.nhs_number} </b>
     </div>
 }
 
@@ -285,11 +288,8 @@ function Mortality({ mortality }: { Mortality }) {
     } else {
 	return <div>
 	    <b>Mortality</b>:
-	       <div>Date of death:
-		   <Date timestamp = {mortality.date_of_death} />
-	       </div>
-	       <div>Cause of death: {get_cause_of_death(mortality)}
-	       </div>
+	       {get_cause_of_death(mortality)}
+	       (<Date timestamp = {mortality.date_of_death} />)
 	</div>
     }
 }
@@ -306,24 +306,20 @@ function AcsRecordComp({ record } : { AcsRecord }) {
     return <div  className ={record_styles.record}>
 	<PatientInfo record = {record} />
 	<Mortality mortality = {record.mortality} />
-	{/*
+	<Collapsible trigger="Details" lazyRender={true}>
 	    <EventCountComp events ={record.event_counts} />
-
-	    <b>Index Spell</b>
 	    <SpellComp spell = {record.index_spell} />
-	    <b>Spells after</b>
 	    <div> {
-	    get_optional_array(record, "spells_after").map(spell =>
-	    <SpellComp spell = {spell} />
-	    )
-	    } </div>
-	    <b>Spells before</b>
+		get_optional_array(record, "spells_after").map(spell =>
+		    <SpellComp spell = {spell} />
+		)
+	    } </div>	    
 	    <div> {
-	    get_optional_array(record, "spells_before").map(spell =>
-	    <SpellComp spell = {spell} />
-	    )
-	    } </div> */}
-
+		get_optional_array(record, "spells_before").map(spell =>
+		    <SpellComp spell = {spell} />
+		)
+	    } </div>	    
+	</Collapsible>	
     </div>
 }
 
@@ -364,6 +360,9 @@ export default function Home() {
     
     const [searchTerm, setSearchTerm] = useState('');
 
+    const [displayLimit, setDisplayLimit] = useState(20);
+    const [hasMore, setHasMore] = useState(true);
+    
     const handleChange = event => {
 	setSearchTerm(event.target.value);
     };
@@ -376,9 +375,10 @@ export default function Home() {
 		// From rust
 		let acs_records: AcsRecord[] = JSON.parse(result as string);
 		setAcsRecords(acs_records);
+		console.log("Done reading file")
 	    })
     }
-
+    
     if (acs_records.length == 0) {
 	return <div>
             <h1>Patient ACS/PCI Record Viewer</h1>
@@ -403,14 +403,44 @@ export default function Home() {
 								    group)
 	    })
 	});
+
+	function fetchData() {
+	    setDisplayLimit(displayLimit + 20)
+	    if (displayLimit > searched_records.length) {
+		setHasMore(false)
+	    }
+	    console.log("Fetching more ", hasMore, displayLimit)
+	}
+	
+	const top_searched_records = searched_records.slice(0, displayLimit)
+
+	function make_record_components(records) {
+	    return <div>
+	    {records.map(record =>
+		<AcsRecordComp record = {record} />)}
+	    </div>
+	}
 	
 	return <div>
-	    <label htmlFor="search">Search clinical code groups: </label>
-	    <input id="search" type="text" onChange={handleChange}/>
-	    <div>Total number of records: {searched_records.length}</div>
-	    <hr />
-	    {searched_records.map(record => <AcsRecordComp record = {record}
-				       />)   
-	    } </div>
+	<label htmlFor="search">Search clinical code groups: </label>
+	<input id="search" type="text" onChange={handleChange}/>
+	<div>Total number of records: {searched_records.length}</div>
+	<hr />
+	
+	<InfiniteScroll
+	    dataLength={top_searched_records.length}
+	    next={fetchData}
+	    hasMore={hasMore}
+	    children={make_record_components(top_searched_records)}
+	    loader={<h4>Loading...</h4>}
+	    endMessage={
+		<p style={{ textAlign: 'center' }}>
+		    <b>Yay! You have seen it all</b>
+		</p>
+	    }
+	>
+	    
+	</InfiniteScroll>
+	</div>
     }
 }
