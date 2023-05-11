@@ -404,12 +404,14 @@ function IndexSpellSummary({ index_spell }: { index_spell: Spell }) {
 }
 
 function AcsRecordComp({ record } : { record: AcsRecord }) {
+    let spells_after_key: keyof AcsRecord = "spells_after";
+    let spells_before_key: keyof AcsRecord = "spells_before";
     return <div  className ={record_styles.record}>
-	<PatientInfo record = {record} />
-	<Mortality mortality = {record.mortality} />
-	<Collapsible
-	    className ={record_styles.collapsible}
-	    contentInnerClassName={record_styles.collapsible_content_inner}
+    <PatientInfo record = {record} />
+    <Mortality mortality = {record.mortality} />
+    <Collapsible
+    className ={record_styles.collapsible}
+    contentInnerClassName={record_styles.collapsible_content_inner}
 	    trigger=<CollapsibleTrigger name="Event Counts" />
 	    lazyRender={true}>
 	    <EventCountComp events ={record.event_counts} />
@@ -425,7 +427,8 @@ function AcsRecordComp({ record } : { record: AcsRecord }) {
 	    contentInnerClassName={record_styles.collapsible_content_inner}
 	    lazyRender={true}>
 	    <div> {
-		get_optional_array(record, "spells_after" as keyof AcsRecord)
+		get_optional_array<AcsRecord, Spell>(record,
+						     spells_after_key)
 		    .map(spell =>
 			<SpellComp spell = {spell} />
 		    )
@@ -436,7 +439,8 @@ function AcsRecordComp({ record } : { record: AcsRecord }) {
 	    contentInnerClassName={record_styles.collapsible_content_inner}
 	    lazyRender={true}>
 	    <div> {
-		get_optional_array(record, "spells_before" as keyof AcsRecord)
+		get_optional_array<AcsRecord, Spell>(record,
+						     spells_before_key)
 		    .map(spell =>
 			<SpellComp spell = {spell} />
 		    )
