@@ -190,6 +190,7 @@ function CategoryElem({ index, category, parent_exclude,
 	    <span className={styles.category_header}>
 		<Collapsible className ={record_styles.collapsible}
 			     contentInnerClassName={record_styles.collapsible_content_inner}
+			     transitionTime={50}
 			     trigger=<CategoryHeader category={category} />
 		    lazyRender={true}>
 		    <ol className={styles.category_list}> {
