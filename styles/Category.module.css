@@ -1,3 +1,12 @@
+.checkbox {
+    vertical-align: top;
+    display: inline-block
+}
+
+.category_header {
+    display: inline-block
+}
+
 .category_name {
     font-weight: bold;
     padding: 0.5em;

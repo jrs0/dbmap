@@ -18,16 +18,11 @@ interface CategorySelector {
 
 function Checkbox({ checked, enabled, onChange }: CategorySelector) {
     const checkboxRef = useRef<HTMLInputElement>(null);
-    return (
-        <label>
-            <input
+    return <input
                 ref={checkboxRef}
                 type="checkbox"
                 checked={checked}
-                onChange={onChange}
-            />
-        </label>
-    );
+                onChange={onChange} />
 };
 
 // The main category for a code
@@ -143,14 +138,12 @@ interface CategoryData {
 }
 
 function CategoryHeader({ category }) {
-    return <span>
-	<span className={styles.category_row}>
-	    <span className={styles.category_name}>
-		{category.name}
-	    </span>
-	    <span className={styles.category_desc}>
-		{category.docs}
-	    </span>
+    return <span className={styles.category_row}>
+	<span className={styles.category_name}>
+	    {category.name}
+	</span>
+	<span className={styles.category_desc}>
+	    {category.docs}
 	</span>
     </span>
 }
@@ -189,27 +182,30 @@ function CategoryElem({ index, category, parent_exclude,
     if (category.categories !== undefined) {
 	// Non-leaf
 	return <div>
-	    <Checkbox checked={included}
-		      enabled={enabled}
-		      onChange={handleChange} />
-	    <Collapsible className ={record_styles.collapsible}
-			 contentInnerClassName={record_styles.collapsible_content_inner}
-			 trigger=<CategoryHeader category={category} />
-		lazyRender={true}>
-		<ol className={styles.category_list}> {
-		    category.categories.map((node,index) => {
-			return <li key={node.index}>
-			    <CategoryElem index={index}
-					  category={node}
-					  parent_exclude={!included}
-					  toggle_cat={toggle_cat_sub}
-					  group={group} />
-			</li>
-		    })
-		} </ol>	    
-
-	    </Collapsible>
-
+	    <span className={styles.checkbox}>
+		<Checkbox checked={included}
+			  enabled={enabled}
+			  onChange={handleChange} />
+	    </span>
+	    <span className={styles.category_header}>
+		<Collapsible className ={record_styles.collapsible}
+			     contentInnerClassName={record_styles.collapsible_content_inner}
+			     trigger=<CategoryHeader category={category} />
+		    lazyRender={true}>
+		    <ol className={styles.category_list}> {
+			category.categories.map((node,index) => {
+			    return <li key={node.index}>
+				<CategoryElem index={index}
+					      category={node}
+					      parent_exclude={!included}
+					      toggle_cat={toggle_cat_sub}
+					      group={group} />
+			    </li>
+			})
+		    } </ol>	    
+		    
+		</Collapsible>
+	    </span>
 	</div>
     } else {
 	// Leaf
