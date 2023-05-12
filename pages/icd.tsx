@@ -34,6 +34,9 @@ interface Category {
     exclude?: string[];
 }
 
+function is_leaf_category(category) {
+    return category.categories === undefined
+}
 
 // Establish whether the component should be included
 // (i.e. ticked) and whether it should be enabled
@@ -49,6 +52,12 @@ function is_ticked(category: Category, group: string, parent_exclude: boolean) {
     let included = !exclude_tag && !parent_exclude
 
     return included
+}
+
+
+function group_not_in_category(category, group) {
+    return (category_above.exclude !== undefined) &&
+	   (category_above.exclude.includes(group))
 }
 
 // Remove a group from the list of
@@ -81,43 +90,16 @@ function exclude_group(category: Category, group: string) {
     }
 }
 
-// Remove all the exclude tags in all
+// Remove all the exclude tags in this category and
+// all its subcategories in place.
 // sublevels of category and return the result
 function remove_all_excludes(category: Category, group: string) {
-
-    // Remove the group from the exclude
-    // list at this level
     include_group(category, group)
- 
-    if (category.categories !== undefined) {
-        // Loop over all the subcategoryegories
-        // remove the exclude
-	// BUG: what even is the line blow?
-	// Need to pass in a function, remove_all
-	// _excludes is not getting any arguments
-        category.categories = category.categories.map((sub_category) => (
+    if (!is_leaf_category(category)) {
+        category.categories.map((sub_category) => (
 	    remove_all_excludes(sub_category, group)
 	))
     }
-
-    // Return the modified categoryegory
-    return category
-}
-
-// Set the top-level excludes for the
-// subcategoryegories in the current categoryegory,
-// and return the modified object
-function set_first_excludes(category: Category, group: string) {
-    if (category.categories !== undefined) {
-        category.categories = category.categories.map((sub_category) => {
-            // Add the group to the excludes key,
-            // or create a new excludes list if
-            // necessary
-            exclude_group(category, group)
-            return (sub_category)
-        })
-    }
-    return category
 }
 
 // Props for a category or code element
@@ -140,10 +122,6 @@ function CategoryHeader({ category }) {
 	    {category.docs}
 	</span>
     </span>
-}
-
-function is_leaf_category(category) {
-    return category.categories == undefined
 }
 
 function docs_contains_match(category, lower_case_search_term) {
@@ -241,10 +219,10 @@ function get_category_ref(top_level_category: TopLevelCategory, indices: number[
     // category to plain category)
     let category = top_level_category.categories[indices[0]];
     indices.slice(1).forEach((n) => {
-	if (category.categories !== undefined) {
+	if (!is_leaf_category(category)) {
 	    category = category.categories[n]
 	} else {
-	    throw new Error("Expected to find cat");
+	    throw new Error("Expected to find a category in get_category_ref() (wrong indices?)");
 	}
     })
     return category;
@@ -325,42 +303,46 @@ export default function Home() {
 	console.log(searchTerm)
     };
 
+    function category_excludes_group(category, group) {
+	return (category.exclude !== undefined) &&
+	       (category.exclude.includes(group))
+    }
+	    
+    function first_higher_category_excluding_group(category_indices, group) {
+	let indices_copy = category_indices.slice()
+	while (true) {
+	    let category = get_category_ref(top_level_category,
+					    indices_copy)
+	    if (category_excludes_group(category, group)) {
+		break;
+	    }
+	    indices_copy.pop()
+        }
+	return indices_copy
+    }
+    
     function toggle_cat(indices: number[], included: boolean) {
         let top_level_category_copy = structuredClone(top_level_category);
-        let category = get_category_ref(top_level_category_copy, indices)
+        let category_to_modify = get_category_ref(top_level_category_copy, indices)
         if (included) {
-	    // Change from included to excluded
-            let category_copy = Object.assign({}, category)
-            category = remove_all_excludes(category, group)
-            exclude_group(category, group)
+	    remove_all_excludes(category_to_modify, group)
+            exclude_group(category_to_modify, group)
         } else {
-	    // Change from excluded to included
-            let indices_above = indices.slice();
-            let category_above = category;
-            while (true) {
-		if (category_above.exclude !== undefined) {
-		    if (category_above.exclude.includes(group)) {
-			break
-		    }
-		}
-		indices_above.pop()
-                category_above = get_category_ref(top_level_category_copy,
-					 indices_above)
-            }
-	    
-	    include_group(get_category_ref(top_level_category_copy,
-				  indices_above),
-			  group)
+            let indices_above = first_higher_category_excluding_group(indices,
+								      group)
+
+	    let category_above = get_category_ref(top_level_category, indices_above)
+	    include_group(category_above, group)
 
             let rel_indices = indices.slice(indices_above.length);
-            category = category_above
+            let category = category_above
             rel_indices.forEach((n) => {
-		if (category.categories !== undefined) {
+		if (!is_leaf_category(category)) {
                     category.categories = category.categories.map((sub_category, index) => {
 			if (index != n) {
                             exclude_group(sub_category, group)
 			}
-			return (sub_category)
+			return sub_category
                     })
 		} else {
 		    throw new Error("Expected to find child key")
