@@ -128,7 +128,7 @@ interface CategoryData {
     toggle_cat: (indices: number[],
 		 included: boolean) => void, // Callback to enable/disable
     group: string, // The currently selected group
-    open: boolean, // Whether the category is expanded
+    hidden: boolean, // Whether the category is expanded
 }
 
 function CategoryHeader({ category }) {
@@ -145,10 +145,16 @@ function CategoryHeader({ category }) {
 // Element that renders a category, which can either be a leaf
 // (a single code) or a category that contains a subcategory list.
 function CategoryElem({ index, category, parent_exclude,
-			toggle_cat, group }: CategoryData) {
+			toggle_cat, group, outer_hidden }: CategoryData) {
 
     const included = is_ticked(category, group, parent_exclude)
 
+
+    // 
+    let [inner_hidden, setInnerHidden] = useState(false)
+    
+    //const hidden = inner_hidden || outer_hidden
+    
     // Take action when the user clicks the checkbox. Note that
     // this function cannot be called for a grayed out box,
     // because it cannot change. This means you can assume the
@@ -166,39 +172,32 @@ function CategoryElem({ index, category, parent_exclude,
         let new_indices = [index].concat(indices)
         toggle_cat(new_indices, included)
     }
-
-    const hidden = true
     
     // This is a candidate for simplifying now that Category is a
     // single object. It would be nice not to duplicate between
     // the category and leaf node.
     if (category.categories !== undefined) {
 	// Non-leaf
-	return <div className={hidden ? styles.hidden : {}}>
+	return <div className={outer_hidden ? styles.hidden : {}}>
 	    <span className={styles.checkbox}>
 		<Checkbox checked={included}
 			  onChange={handleChange} />
 	    </span>
-	    <span className={styles.category_header}>
-		<Collapsible className ={record_styles.collapsible}
-			     contentInnerClassName={record_styles.collapsible_content_inner}
-			     transitionTime={20}
-			     trigger=<CategoryHeader category={category} />
-		    >
-		    <ol className={styles.category_list}> {
-			category.categories.map((node,index) => {
-			    return <li key={node.index}>
-				<CategoryElem index={index}
-					      category={node}
-					      parent_exclude={!included}
-					      toggle_cat={toggle_cat_sub}
-					      group={group}/>
-			    </li>
-			})
-		    } </ol>	    
-		    
-		</Collapsible>
+	    <span className={styles.category_header} onClick={() => setInnerHidden(!inner_hidden)}>
+		<CategoryHeader category={category} />
 	    </span>
+	    <ol className={`${styles.category_list} ${inner_hidden ? styles.hidden : {}}`}> {
+		category.categories.map((node,index) => {
+		    return <li key={node.index}>
+			<CategoryElem index={index}
+				      category={node}
+				      parent_exclude={!included}
+				      toggle_cat={toggle_cat_sub}
+				      group={group}
+				      outer_hidden={inner_hidden} />
+		    </li>
+		})
+	    } </ol>
 	</div>
     } else {
 	// Leaf
