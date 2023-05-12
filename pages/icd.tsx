@@ -122,12 +122,13 @@ function set_first_excludes(category: Category, group: string) {
 
 // Props for a category or code element
 interface CategoryData {
-    index: number; // Where is this category in the parent child list
-    category: Category; // The data for this category
-    parent_exclude: boolean; // Whether the parent is excluded
+    index: number, // Where is this category in the parent child list
+    category: Category, // The data for this category
+    parent_exclude: boolean, // Whether the parent is excluded
     toggle_cat: (indices: number[],
-		 included: boolean) => void; // Callback to enable/disable
-    group: string; // The currently selected group
+		 included: boolean) => void, // Callback to enable/disable
+    group: string, // The currently selected group
+    open: boolean, // Whether the category is expanded
 }
 
 function CategoryHeader({ category }) {
@@ -166,12 +167,14 @@ function CategoryElem({ index, category, parent_exclude,
         toggle_cat(new_indices, included)
     }
 
+    const hidden = true
+    
     // This is a candidate for simplifying now that Category is a
     // single object. It would be nice not to duplicate between
     // the category and leaf node.
     if (category.categories !== undefined) {
 	// Non-leaf
-	return <div>
+	return <div className={hidden ? styles.hidden : {}}>
 	    <span className={styles.checkbox}>
 		<Checkbox checked={included}
 			  onChange={handleChange} />
@@ -179,9 +182,9 @@ function CategoryElem({ index, category, parent_exclude,
 	    <span className={styles.category_header}>
 		<Collapsible className ={record_styles.collapsible}
 			     contentInnerClassName={record_styles.collapsible_content_inner}
-			     transitionTime={50}
+			     transitionTime={20}
 			     trigger=<CategoryHeader category={category} />
-		    lazyRender={true}>
+		    >
 		    <ol className={styles.category_list}> {
 			category.categories.map((node,index) => {
 			    return <li key={node.index}>
@@ -189,7 +192,7 @@ function CategoryElem({ index, category, parent_exclude,
 					      category={node}
 					      parent_exclude={!included}
 					      toggle_cat={toggle_cat_sub}
-					      group={group} />
+					      group={group}/>
 			    </li>
 			})
 		    } </ol>	    
@@ -282,7 +285,11 @@ export default function Home() {
     // when the file is loaded.
     const [group, setGroup] = useState("");
 
-
+    let open = false;
+    if(searchTerm.length > 0) {
+	open = true;
+    }
+    console.log(searchTerm, searchTerm.length, open)
     
     // Function to load the codes yaml file
     function load_file() {
@@ -496,15 +503,11 @@ export default function Home() {
 				      category={node}
 				      parent_exclude={false}
 				      toggle_cat={toggle_cat}
-				      group={group} />
+				      group={group}
+			/>
 		    </li>
 		})
-	    } </ol>	    
-	    {/* <CategoryElem index={0}
-		cat={top_level_category.child[0]}
-		parent_exclude={false}
-		toggle_cat={toggle_cat}
-		group={group} /> */}
+	    } </ol>
 	</div>
 	
     }
