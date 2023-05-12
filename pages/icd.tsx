@@ -191,11 +191,10 @@ function CategoryElem({ index, category, parent_exclude,
 	return <div>
 	    <Checkbox checked={included}
 		      enabled={enabled}
-		      onChange={handleChange}></Checkbox>
-	    <Collapsible
-		className ={record_styles.collapsible}
-			   contentInnerClassName={record_styles.collapsible_content_inner}
-		trigger=<CategoryHeader category={category} />
+		      onChange={handleChange} />
+	    <Collapsible className ={record_styles.collapsible}
+			 contentInnerClassName={record_styles.collapsible_content_inner}
+			 trigger=<CategoryHeader category={category} />
 		lazyRender={true}>
 		<ol className={styles.category_list}> {
 		    category.categories.map((node,index) => {
@@ -217,7 +216,7 @@ function CategoryElem({ index, category, parent_exclude,
 	return <div>
 	    <Checkbox checked={included}
 		      enabled={enabled}
-		      onChange={handleChange}></Checkbox>
+		      onChange={handleChange} />
 	    <span>
 		<span className={styles.category_name}>
 		    {category.name}
@@ -348,8 +347,6 @@ export default function Home() {
         // problem, but it can be optimised later.
         let top_level_category_copy = structuredClone(top_level_category);
 
-	const [searchTerm, setSearchTerm] = useState('');
-	
         // Extract the cat referred to by indices
         // (note that cat is modified by reference,
         // so changing the resulting cat will still
