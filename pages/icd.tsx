@@ -325,8 +325,6 @@ export default function Home() {
 	console.log(searchTerm)
     };
 
-
-    
     function toggle_cat(indices: number[], included: boolean) {
         let top_level_category_copy = structuredClone(top_level_category);
         let category = get_category_ref(top_level_category_copy, indices)
