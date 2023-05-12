@@ -145,7 +145,7 @@ function CategoryHeader({ category }) {
 // Element that renders a category, which can either be a leaf
 // (a single code) or a category that contains a subcategory list.
 function CategoryElem({ index, category, parent_exclude,
-			toggle_cat, group, outer_hidden }: CategoryData) {
+			toggle_cat, group, outer_hidden, search_term }: CategoryData) {
 
     const included = is_ticked(category, group, parent_exclude)
 
@@ -164,6 +164,10 @@ function CategoryElem({ index, category, parent_exclude,
         toggle_cat([index], included)
     }
 
+    function hidden_category_indices(categories) {
+	return categories.map(node => (!node.docs.includes(search_term)))
+    }
+   
     // Pass requests by subcomponents up to the top level.
     // The indices argument represents the tail of the indices
     // list, and included is passed from the subcomponent
@@ -177,6 +181,9 @@ function CategoryElem({ index, category, parent_exclude,
     // single object. It would be nice not to duplicate between
     // the category and leaf node.
     if (category.categories !== undefined) {
+
+	const hidden_list = hidden_category_indices(category.categories)
+	
 	// Non-leaf
 	return <div className={outer_hidden ? styles.hidden : {}}>
 	    <span className={styles.checkbox}>
@@ -194,7 +201,7 @@ function CategoryElem({ index, category, parent_exclude,
 				      parent_exclude={!included}
 				      toggle_cat={toggle_cat_sub}
 				      group={group}
-				      outer_hidden={inner_hidden} />
+				      outer_hidden={hidden_list[index]} />
 		    </li>
 		})
 	    } </ol>
@@ -503,6 +510,7 @@ export default function Home() {
 				      parent_exclude={false}
 				      toggle_cat={toggle_cat}
 				      group={group}
+				      search_term={searchTerm}
 			/>
 		    </li>
 		})
