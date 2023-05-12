@@ -496,11 +496,20 @@ export default function Home() {
     const [displayLimit, setDisplayLimit] = useState(20);
     const [hasMore, setHasMore] = useState(true);
     
-    const handleChange = event => {
+    const handleChange = (event: React.ChangeEvent<any>) => {
 	setDisplayLimit(20)
 	setHasMore(true)
 	setSearchTerm(event.target.value);
     };
+
+    function fetchData(searched_records_length: number) {
+	setDisplayLimit(displayLimit + 20)
+	if (displayLimit > searched_records_length) {
+	    setHasMore(false)
+	}
+	console.log("Fetching more ", hasMore, displayLimit)
+    }
+
     
     // Function to load the codes yaml file
     function load_file() {
@@ -513,6 +522,14 @@ export default function Home() {
 		console.log("Done reading file")
 	    })
     }
+
+    function make_record_components(records: AcsRecord[]) {
+	return <div>
+	    {records.map(record =>
+		<AcsRecordComp record = {record} />)}
+	</div>
+    }
+
     
     if (acs_records.length == 0) {
 	return <div>
@@ -566,35 +583,19 @@ export default function Home() {
 
 	    
 	});
-
-	function fetchData() {
-	    setDisplayLimit(displayLimit + 20)
-	    if (displayLimit > searched_records.length) {
-		setHasMore(false)
-	    }
-	    console.log("Fetching more ", hasMore, displayLimit)
-	}
 	
 	const top_searched_records = searched_records.slice(0, displayLimit)
-
-	function make_record_components(records) {
-	    return <div>
-	    {records.map(record =>
-		<AcsRecordComp record = {record} />)}
-	    </div>
-	}
 	
 	return <div>
-	<label htmlFor="search">Search clinical code groups: </label>
-	<input id="search" type="text" onChange={handleChange}/>
-	<div>Total number of records: {searched_records.length}</div>
+	    <label htmlFor="search">Search clinical code groups: </label>
+	    <input id="search" type="text" onChange={handleChange}/>
+	    <div>Total number of records: {searched_records.length}</div>
 	<hr />
 	
 	<InfiniteScroll
 	    dataLength={top_searched_records.length}
-	    next={fetchData}
+	    next={() => fetchData(searched_records.length)}
 	    hasMore={hasMore}
-	    children={make_record_components(top_searched_records)}
 	    loader={<h4>Loading...</h4>}
 	    endMessage={
 		<p style={{ textAlign: 'center' }}>
@@ -602,8 +603,8 @@ export default function Home() {
 		</p>
 	    }
 	>
-	    
+	    {make_record_components(top_searched_records)}
 	</InfiniteScroll>
-	</div>
+    </div>
     }
 }
