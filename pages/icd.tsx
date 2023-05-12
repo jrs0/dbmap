@@ -12,11 +12,10 @@ import { parse_search_terms } from "../services/search_term.tsx"
 // Information for the tick box that selects categories or codes
 interface CategorySelector {
     checked: boolean;
-    enabled: boolean;
     onChange: () => void;
 }
 
-function Checkbox({ checked, enabled, onChange }: CategorySelector) {
+function Checkbox({ checked, onChange }: CategorySelector) {
     const checkboxRef = useRef<HTMLInputElement>(null);
     return <input
                 ref={checkboxRef}
@@ -39,7 +38,7 @@ interface Category {
 // Establish whether the component should be included
 // (i.e. ticked) and whether it should be enabled
 // (grayed out or not)
-function visible_status(category: Category, group: string, parent_exclude: boolean) {
+function is_ticked(category: Category, group: string, parent_exclude: boolean) {
     // Component is included by default, unless there
     // is an exclude tag at the current level, or
     // the parent is excluded
@@ -49,13 +48,7 @@ function visible_status(category: Category, group: string, parent_exclude: boole
     }
     let included = !exclude_tag && !parent_exclude
 
-    // Checkbox is enabled if the parent is not excluded
-    let enabled = !parent_exclude;
-
-    return {
-        included: included,
-        enabled: true//enabled
-    }
+    return included
 }
 
 // Remove a group from the list of
@@ -153,10 +146,7 @@ function CategoryHeader({ category }) {
 function CategoryElem({ index, category, parent_exclude,
 			toggle_cat, group }: CategoryData) {
 
-    const {
-	included,
-	enabled
-    } = visible_status(category, group, parent_exclude)
+    const included = is_ticked(category, group, parent_exclude)
 
     // Take action when the user clicks the checkbox. Note that
     // this function cannot be called for a grayed out box,
@@ -184,7 +174,6 @@ function CategoryElem({ index, category, parent_exclude,
 	return <div>
 	    <span className={styles.checkbox}>
 		<Checkbox checked={included}
-			  enabled={enabled}
 			  onChange={handleChange} />
 	    </span>
 	    <span className={styles.category_header}>
@@ -212,7 +201,6 @@ function CategoryElem({ index, category, parent_exclude,
 	// Leaf
 	return <div>
 	    <Checkbox checked={included}
-		      enabled={enabled}
 		      onChange={handleChange} />
 	    <span>
 		<span className={styles.category_name}>
