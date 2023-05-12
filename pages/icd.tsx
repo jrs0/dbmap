@@ -311,8 +311,7 @@ export default function Home() {
     function first_higher_category_excluding_group(category_indices, group) {
 	let indices_copy = category_indices.slice()
 	while (true) {
-	    let category = get_category_ref(top_level_category,
-					    indices_copy)
+	    let category = get_category_ref(top_level_category, indices_copy)
 	    if (category_excludes_group(category, group)) {
 		break;
 	    }
@@ -328,12 +327,13 @@ export default function Home() {
 	    remove_all_excludes(category_to_modify, group)
             exclude_group(category_to_modify, group)
         } else {
-            let indices_above = first_higher_category_excluding_group(indices,
-								      group)
-
-	    let category_above = get_category_ref(top_level_category, indices_above)
+	    console.log("indices", indices)
+            let indices_above = first_higher_category_excluding_group(indices, group)
+	    console.log("indices_above", indices_above)
+	    let category_above = get_category_ref(top_level_category_copy, indices_above)
 	    include_group(category_above, group)
-
+	    console.log(category_above)
+	    
             let rel_indices = indices.slice(indices_above.length);
             let category = category_above
             rel_indices.forEach((n) => {
