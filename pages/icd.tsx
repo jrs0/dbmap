@@ -139,6 +139,23 @@ interface CategoryData {
     group: string; // The currently selected group
 }
 
+function CategoryHeader({ category, included, enabled, handleChange, hidden }) {
+    return <div>
+	<Checkbox checked={included}
+		  enabled={enabled}
+		  onChange={handleChange}></Checkbox>
+	<span className={styles.category_row}
+	      onClick = {() => setHidden(!hidden) }>
+	    <span className={styles.category_name}>
+		{category.name}
+	    </span>
+	    <span className={styles.category_desc}>
+		{category.docs}
+	    </span>
+	</span>
+    </div>
+}
+
 // Element that renders a category, which can either be a leaf
 // (a single code) or a category that contains a subcategory list.
 function CategoryElem({ index, category, parent_exclude,
@@ -150,7 +167,7 @@ function CategoryElem({ index, category, parent_exclude,
     } = visible_status(category, group, parent_exclude)
 
     // Whether the children of this element are hidden
-    let [hidden, setHidden] = useState(true);
+    let [hidden, setHidden] = useState(false);
 
     // Take action when the user clicks the checkbox. Note that
     // this function cannot be called for a grayed out box,
@@ -176,18 +193,11 @@ function CategoryElem({ index, category, parent_exclude,
     if (category.categories !== undefined) {
 	// Non-leaf
 	return <div>
-	    <Checkbox checked={included}
-		enabled={enabled}
-		onChange={handleChange}></Checkbox>
-	    <span className={styles.category_row}
-		  onClick = {() => setHidden(!hidden) }>
-		<span className={styles.category_name}>
-		    {category.name}
-		</span>
-		<span className={styles.category_desc}>
-		    {category.docs}
-		</span>
-	    </span>
+	    <CategoryHeader category={category}
+				     included={included}
+				     enabled={enabled}
+				     onChange={handleChange}
+				     hidden={hidden} />
 	    <ol className={styles.category_list}> {
 		category.categories.map((node,index) => {
 		    if (!hidden) {
