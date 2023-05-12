@@ -425,46 +425,46 @@ function AcsRecordComp({ record } : { record: AcsRecord }) {
     <PatientInfo record = {record} />
     <Mortality mortality = {record.mortality} />
     <Collapsible
-    className ={record_styles.collapsible}
-    contentInnerClassName={record_styles.collapsible_content_inner}
-	    trigger=<CollapsibleTrigger name="Event Counts" />
-	    lazyRender={true}>
-	    <EventCountComp events ={record.event_counts} />
-	</Collapsible>
-	<Collapsible
-	    trigger=<IndexSpellSummary index_spell ={record.index_spell} />
-	    contentInnerClassName={record_styles.collapsible_content_inner}
-	    lazyRender={true}>
-	    <SpellComp spell = {record.index_spell} />
-	</Collapsible>
-	<Collapsible
-	    trigger=<CollapsibleTrigger name="Spells After" />
-	    contentInnerClassName={record_styles.collapsible_content_inner}
-	    lazyRender={true}>
-	    <div> {
-		get_optional_array<AcsRecord, Spell>(record,
-						     spells_after_key)
-		    .map(spell =>
-			<SpellComp
-			    key={spell.id}
-			    spell = {spell} />
-		    )
-	    } </div>
-	</Collapsible>
-	<Collapsible
-	    trigger=<CollapsibleTrigger name="Spells Before" />
-	    contentInnerClassName={record_styles.collapsible_content_inner}
-	    lazyRender={true}>
-	    <div> {
-		get_optional_array<AcsRecord, Spell>(record,
-						     spells_before_key)
-		    .map(spell =>
-			<SpellComp
-			    key ={spell.id}
-			    spell = {spell} />
-		    )
-	    } </div>	    
-	</Collapsible>	
+	className ={record_styles.collapsible}
+		   contentInnerClassName={record_styles.collapsible_content_inner}
+		   trigger=<CollapsibleTrigger name="Event Counts" />
+	lazyRender={true}>
+	<EventCountComp events ={record.event_counts} />
+    </Collapsible>
+    <Collapsible
+	trigger=<IndexSpellSummary index_spell ={record.index_spell} />
+	contentInnerClassName={record_styles.collapsible_content_inner}
+	lazyRender={true}>
+	<SpellComp spell = {record.index_spell} />
+    </Collapsible>
+    <Collapsible
+	trigger=<CollapsibleTrigger name="Spells After" />
+	contentInnerClassName={record_styles.collapsible_content_inner}
+	lazyRender={true}>
+	<div> {
+	    get_optional_array<AcsRecord, Spell>(record,
+						 spells_after_key)
+		.map(spell =>
+		    <SpellComp
+			key={spell.id}
+			spell = {spell} />
+		)
+	} </div>
+    </Collapsible>
+    <Collapsible
+	trigger=<CollapsibleTrigger name="Spells Before" />
+	contentInnerClassName={record_styles.collapsible_content_inner}
+	lazyRender={true}>
+	<div> {
+	    get_optional_array<AcsRecord, Spell>(record,
+						 spells_before_key)
+		.map(spell =>
+		    <SpellComp
+			key ={spell.id}
+			spell = {spell} />
+		)
+	} </div>	    
+    </Collapsible>	
     </div>
 }
 

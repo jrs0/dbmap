@@ -2,7 +2,10 @@ import { useState, useRef, useEffect, useMemo, ChangeEvent } from 'react';
 import { invoke } from "@tauri-apps/api/tauri"
 import Link from 'next/link'
 
+import Collapsible from 'react-collapsible';
+
 import styles from '../styles/Category.module.css'
+import record_styles from '../styles/ClinicalCodeComp.module.css'
 
 import { parse_search_terms } from "../services/search_term.tsx"
 
@@ -139,13 +142,9 @@ interface CategoryData {
     group: string; // The currently selected group
 }
 
-function CategoryHeader({ category, included, enabled, handleChange, hidden }) {
-    return <div>
-	<Checkbox checked={included}
-		  enabled={enabled}
-		  onChange={handleChange}></Checkbox>
-	<span className={styles.category_row}
-	      onClick = {() => setHidden(!hidden) }>
+function CategoryHeader({ category }) {
+    return <span>
+	<span className={styles.category_row}>
 	    <span className={styles.category_name}>
 		{category.name}
 	    </span>
@@ -153,7 +152,7 @@ function CategoryHeader({ category, included, enabled, handleChange, hidden }) {
 		{category.docs}
 	    </span>
 	</span>
-    </div>
+    </span>
 }
 
 // Element that renders a category, which can either be a leaf
@@ -165,9 +164,6 @@ function CategoryElem({ index, category, parent_exclude,
 	included,
 	enabled
     } = visible_status(category, group, parent_exclude)
-
-    // Whether the children of this element are hidden
-    let [hidden, setHidden] = useState(false);
 
     // Take action when the user clicks the checkbox. Note that
     // this function cannot be called for a grayed out box,
@@ -193,24 +189,28 @@ function CategoryElem({ index, category, parent_exclude,
     if (category.categories !== undefined) {
 	// Non-leaf
 	return <div>
-	    <CategoryHeader category={category}
-				     included={included}
-				     enabled={enabled}
-				     onChange={handleChange}
-				     hidden={hidden} />
-	    <ol className={styles.category_list}> {
-		category.categories.map((node,index) => {
-		    if (!hidden) {
+	    <Checkbox checked={included}
+		      enabled={enabled}
+		      onChange={handleChange}></Checkbox>
+	    <Collapsible
+		className ={record_styles.collapsible}
+			   contentInnerClassName={record_styles.collapsible_content_inner}
+		trigger=<CategoryHeader category={category} />
+		lazyRender={true}>
+		<ol className={styles.category_list}> {
+		    category.categories.map((node,index) => {
 			return <li key={node.index}>
 			    <CategoryElem index={index}
-				      category={node}
-				      parent_exclude={!included}
-				      toggle_cat={toggle_cat_sub}
-				      group={group} />
+					  category={node}
+					  parent_exclude={!included}
+					  toggle_cat={toggle_cat_sub}
+					  group={group} />
 			</li>
-		    }
-		})
-	    } </ol>	    
+		    })
+		} </ol>	    
+
+	    </Collapsible>
+
 	</div>
     } else {
 	// Leaf
@@ -218,7 +218,7 @@ function CategoryElem({ index, category, parent_exclude,
 	    <Checkbox checked={included}
 		      enabled={enabled}
 		      onChange={handleChange}></Checkbox>
-	    <span onClick = {() => setHidden(!hidden) }>
+	    <span>
 		<span className={styles.category_name}>
 		    {category.name}
 		</span>
