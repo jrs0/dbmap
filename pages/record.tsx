@@ -50,7 +50,10 @@ function EventCountBlock({ event_count_list }:
 			 { event_count_list: EventCount[] }) {
     return <div>
 	{event_count_list.map(event_count =>
-	    <div><b>{event_count.count}</b> {event_count.name}</div>)}
+	    <div key={event_count.name}>
+		<b>{event_count.count}</b>
+		{event_count.name}
+	    </div>)}
     </div>
 }
 
@@ -93,7 +96,9 @@ function ClinicalCodeComp({ clinical_code, group_style }:
     return <span>
 	{
 	    clinical_code_groups(clinical_code).map(group =>
-		<span className={`${record_styles.tag} ${record_styles[group_style]}`}>
+		<span
+		    key={group}
+		    className={`${record_styles.tag} ${record_styles[group_style]}`}>
 		    {group}
 		</span>)
 	}
@@ -136,11 +141,12 @@ function SecondaryClinicalCodes(episode: Episode,
 				name: TypedKeyOf<ClinicalCode[], Episode>,
 				group_style: string) {
     if (name in episode) {
-	return <div>{episode[name].map(clinical_code => <div>
-	    <ClinicalCodeComp
-		clinical_code ={clinical_code}
-		group_style ={group_style} />
-	</div>
+	return <div>{episode[name].map(clinical_code =>
+	    <div key={clinical_code.name}>
+		<ClinicalCodeComp
+		    clinical_code ={clinical_code}
+		    group_style ={group_style} />
+	    </div>
 	    )}
 	</div>
     } else {
@@ -285,7 +291,10 @@ function SpellComp({ spell }: { spell: Spell }) {
 	<div>Spell end: <Date timestamp ={spell.end_date} /></div>
 	<div>Contains: {spell_contains_clinical_code_group_anywhere(spell, "acs_nstemi")}</div>
 	<b>Episodes</b>
-	{spell.episodes.map(episode => <div>
+	{spell.episodes.map(episode =>
+	    // Using this as a key is a bug, but episodes have no key yet
+	    // so this is just a workaround. TO FIX!
+	    <div key ={episode.start_date.timestamp}>
 	    <EpisodeComp episode = {episode} />
 	</div>)}
     </div>
@@ -390,13 +399,17 @@ function IndexSpellSummary({ index_spell }: { index_spell: Spell }) {
     return <div className = {record_styles.collapsible_trigger}>
     Index Spell: {
 	Array.from(get_all_clinical_code_groups(index_spell, true))
-	     .map(group => <span className={`${record_styles.tag} ${record_styles.diagnosis_group}`}>
+	     .map(group => <span
+			       key ={group}
+			       className={`${record_styles.tag} ${record_styles.diagnosis_group}`}>
 		 {group}
 	     </span>)
     }
     {
 	Array.from(get_all_clinical_code_groups(index_spell, false))
-	     .map(group => <span className={`${record_styles.tag} ${record_styles.procedure_group}`}>
+	     .map(group => <span
+			       key ={group}
+			       className={`${record_styles.tag} ${record_styles.procedure_group}`}>
 		 {group}
 	     </span>)
     }
@@ -430,7 +443,9 @@ function AcsRecordComp({ record } : { record: AcsRecord }) {
 		get_optional_array<AcsRecord, Spell>(record,
 						     spells_after_key)
 		    .map(spell =>
-			<SpellComp spell = {spell} />
+			<SpellComp
+			    key={spell.id}
+			    spell = {spell} />
 		    )
 	    } </div>
 	</Collapsible>
@@ -442,7 +457,9 @@ function AcsRecordComp({ record } : { record: AcsRecord }) {
 		get_optional_array<AcsRecord, Spell>(record,
 						     spells_before_key)
 		    .map(spell =>
-			<SpellComp spell = {spell} />
+			<SpellComp
+			    key ={spell.id}
+			    spell = {spell} />
 		    )
 	    } </div>	    
 	</Collapsible>	
@@ -526,7 +543,9 @@ export default function Home() {
     function make_record_components(records: AcsRecord[]) {
 	return <div>
 	    {records.map(record =>
-		<AcsRecordComp record = {record} />)}
+		<AcsRecordComp
+		    key={record.index_spell.id}
+		    record = {record} />)}
 	</div>
     }
 
