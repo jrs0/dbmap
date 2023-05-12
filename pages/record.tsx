@@ -8,6 +8,8 @@ import styles from '../styles/Category.module.css'
 import Collapsible from 'react-collapsible';
 import InfiniteScroll from 'react-infinite-scroll-component';
 
+import { parse_search_terms } from "../services/search_term.tsx"
+
 interface EventCount {
     name: string,
     count: number,
@@ -562,19 +564,7 @@ export default function Home() {
 	</div>
     } else {
 
-	const individual_search_terms = searchTerm.split(/[ ,]+/)
-	let include_groups = individual_search_terms
-	    .filter(function(term) {
-		return term.charAt(0) !== "!"
-	    })
-	
-	let exclude_groups = individual_search_terms
-	    .filter(function(term) {
-		return term.charAt(0) === "!"
-	    }).map(function(term) {
-		return term.replace("!", '')
-	    })
-
+	let { include_groups, exclude_groups } = parse_search_terms(searchTerm);
 	
 	console.log("include", include_groups)
 	console.log("exclude", exclude_groups)
@@ -609,21 +599,21 @@ export default function Home() {
 	    <label htmlFor="search">Search clinical code groups: </label>
 	    <input id="search" type="text" onChange={handleChange}/>
 	    <div>Total number of records: {searched_records.length}</div>
-	<hr />
-	
-	<InfiniteScroll
-	    dataLength={top_searched_records.length}
-	    next={() => fetchData(searched_records.length)}
-	    hasMore={hasMore}
-	    loader={<h4>Loading...</h4>}
-	    endMessage={
-		<p style={{ textAlign: 'center' }}>
-		    <b>You have seen all records!</b>
-		</p>
-	    }
-	>
-	    {make_record_components(top_searched_records)}
-	</InfiniteScroll>
-    </div>
+	    <hr />
+	    
+	    <InfiniteScroll
+		dataLength={top_searched_records.length}
+		next={() => fetchData(searched_records.length)}
+		hasMore={hasMore}
+		loader={<h4>Loading...</h4>}
+		endMessage={
+		    <p style={{ textAlign: 'center' }}>
+			<b>You have seen all records!</b>
+		    </p>
+		}
+	    >
+		{make_record_components(top_searched_records)}
+	    </InfiniteScroll>
+	</div>
     }
 }

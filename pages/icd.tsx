@@ -4,6 +4,8 @@ import Link from 'next/link'
 
 import styles from '../styles/Category.module.css'
 
+import { parse_search_terms } from "../services/search_term.tsx"
+
 // Information for the tick box that selects categories or codes
 interface CategorySelector {
     checked: boolean;
@@ -261,6 +263,9 @@ export default function Home() {
 
     let [top_level_category, setTopLevelCategory] = useState<TopLevelCategory>({categories: [], groups: []});
 
+    const [searchTerm, setSearchTerm] = useState('');
+
+    
     // Function to save the codes yaml file
     function save_file() {
         invoke('save_yaml', {
@@ -283,6 +288,8 @@ export default function Home() {
     // when the file is loaded.
     const [group, setGroup] = useState("");
 
+
+    
     // Function to load the codes yaml file
     function load_file() {
         invoke('get_yaml')
@@ -318,6 +325,12 @@ export default function Home() {
         setGroup(event.target.value);
     };
 
+    const handleSearchTermChange = (event: React.ChangeEvent<any>) => {
+	setSearchTerm(event.target.value);
+	console.log(searchTerm)
+    };
+
+    
     function toggle_cat(indices: number[], included: boolean) {
 
         // Copy the codes definition structure
@@ -325,6 +338,8 @@ export default function Home() {
         // problem, but it can be optimised later.
         let top_level_category_copy = structuredClone(top_level_category);
 
+	const [searchTerm, setSearchTerm] = useState('');
+	
         // Extract the cat referred to by indices
         // (note that cat is modified by reference,
         // so changing the resulting cat will still
@@ -467,9 +482,13 @@ export default function Home() {
 	    <p className={styles.info}>Use the groups selector to pick a group, and then use the checkboxes to include or exclude categories or codes from the group. When you are finished, save the resulting groups to a file.</p>
 	    <div>
 		<span className={styles.button}
-		      onClick={save_file}>Save as</span>
-		<Link className={styles.button} href="/">Back</Link>
-	    </div>
+	onClick={save_file}>Save as</span>
+	<Link className={styles.button} href="/">Back</Link>
+	</div>
+	<div className={styles.groups}>
+	    <label htmlFor="search">Search: </label>
+	    <input id="search" type="text" onChange={handleSearchTermChange}/>
+	</div>
 	    <div className={styles.groups}>
 		Groups: <select onChange={handleGroupChange}> {
 		    get_groups().map((grp) => (
@@ -480,13 +499,13 @@ export default function Home() {
 
 	    <ol className={styles.category_list}> {
 		top_level_category.categories.map((node,index) => {
-			return <li key={node.index}>
-			    <CategoryElem index={index}
-					  category={node}
-					  parent_exclude={false}
-					  toggle_cat={toggle_cat}
-					  group={group} />
-			</li>
+		    return <li key={node.index}>
+			<CategoryElem index={index}
+				      category={node}
+				      parent_exclude={false}
+				      toggle_cat={toggle_cat}
+				      group={group} />
+		    </li>
 		})
 	    } </ol>	    
 	    {/* <CategoryElem index={0}
