@@ -60,18 +60,6 @@ function group_not_in_category(category, group) {
 	   (category_above.exclude.includes(group))
 }
 
-function include_group(category: Category, group: string) {
-    if (category.exclude !== undefined) {
-	const index = category.exclude.indexOf(group);
-        if (index > -1) {
-            category.exclude.splice(index, 1);
-        }
-	if (category.exclude.length == 0) {
-	    delete category.exclude
-	}	
-    }
-}
-
 function hide_category(category: Category, hidden: boolean) {
     // hidden key is really just a placemarker. Only ever
     // true or missing (this feels wrong)
@@ -89,6 +77,10 @@ function is_hidden(category: Category) {
     return category.hidden !== undefined
 }
 
+function is_visible(category) {
+    return !is_hidden(category)
+}
+
 function include_visible_category_tree(category: Category, group: string) {
     if (!is_hidden(category)) {
 	include_group(category, group)
@@ -100,11 +92,23 @@ function include_visible_category_tree(category: Category, group: string) {
     }
 }
 
-function exclude_group(category: Category, group: string) {
+function append_group_to_exclude_list(category: Category, group: string) {
     if (category.exclude !== undefined) {
         category.exclude.push(group)
     } else {
         category.exclude = [group]
+    }
+}
+
+function remove_group_from_exclude_list(category: Category, group: string) {
+    if (category.exclude !== undefined) {
+	const index = category.exclude.indexOf(group);
+        if (index > -1) {
+            category.exclude.splice(index, 1);
+        }
+	if (category.exclude.length == 0) {
+	    delete category.exclude
+	}	
     }
 }
 
@@ -134,9 +138,14 @@ function docs_contains_match(category, lower_case_search_term) {
     return category.docs.toLowerCase().includes(lower_case_search_term)
 }
 
+function name_contains_match(category, lower_case_search_term) {
+    return category.name.toLowerCase().includes(lower_case_search_term)
+}
+
 function any_match_in_category(category, lower_case_search_term) {
     if (is_leaf_category(category)) {
-	return docs_contains_match(category, lower_case_search_term)
+	return (docs_contains_match(category, lower_case_search_term))
+	    || (name_contains_match(category, lower_case_search_term))
     } else {
 	return category
 	    .categories
@@ -268,24 +277,50 @@ function first_super_category_excluding_group(top_level_category, category_indic
     return indices_copy
 }
 
+function sub_categories(category) {
+    if (!is_leaf_category(category)) {
+	return category.categories
+    } else {
+	return []
+    }
+}
+
 function exclude_invisible_sub_categories(category, group) {
-    category.categories.map(sub_category => {
+    sub_categories(category).map(sub_category => {
 	if (is_hidden(sub_category)) {
 	    exclude_group(sub_category, group)
 	}
     })
 }
 
-function exclude_all_visible_sub_categories(category, group) {
-    
-    /* include_visible_category_tree(category, group)
-     * if (!is_hidden(category)) {
-       exclude_group(category, group)
-     * } */
+function exclude_visible_sub_categories(category, group) {
+    if (is_leaf_category(category)) {
+	if (is_visible(category)) {
+	    append_group_to_exclude_list(category, group)
+	}
+    } else {
+	sub_categories(category)
+	    .filter(is_visible)
+	    .map(sub_category => {
+		exclude_visible_sub_categories(sub_category, group)
+	    })
+    }
 }
 
-
-function include_all_visible_sub_categories(top_level_category, indices, group) {
+function include_visible_sub_categories(top_level_category, indices, group) {
+    if (is_leaf_category(category)) {
+	if (is_visible(category)) {
+	    // needs the parent to be included
+	    remove_group_from_exclude_list(category, group)
+	}
+    } else {
+	sub_categories(category)
+	    .filter(is_visible)
+	    .map(sub_category => {
+		
+	    })
+	
+    }
     
     /* let indices_above = first_super_category_excluding_group(top_level_category, indices, group)
      * let super_category = get_category_ref(top_level_category, indices_above)
@@ -371,11 +406,9 @@ export default function Home() {
         let top_level_category_copy = structuredClone(top_level_category);
         let category_to_modify = get_category_ref(top_level_category_copy, indices)
         if (included) {
-	    exclude_all_visible_sub_categories(category_to_modify, group)
+	    
         } else {
-	    include_all_visible_sub_categories(top_level_category_copy,
-					      indices,
-					      group)
+
         }
         setTopLevelCategory(top_level_category_copy)
     }
