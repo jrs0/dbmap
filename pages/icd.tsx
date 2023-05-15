@@ -427,7 +427,8 @@ export default function Home() {
 	make_include_path_to_sub_category(super_category, relative_indices, group)
 
 	// Now the current category is not part of an excluded subtree,
-	// need to also include all the children. 
+	// need to also include all the visible sub categories
+	
 	
     }
     
