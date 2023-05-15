@@ -320,18 +320,22 @@ export default function Home() {
 	return indices_copy
     }
 
+    function exclude_all_subcategories_except_n(category, n) {
+        category.categories.map((sub_category, index) => {
+	    if (index != n) {
+                exclude_group(sub_category, group)
+	    }
+        })
+
+    }
+    
     // Include the subcategory referred to by indices relative to
     // another category, by including all categories between the two
     // and ensuring that other sibling categories are excluded.
     function include_subcategory_at_depth(category, indices, group) {
-	console.log("h", category)
         indices.forEach((n) => {
 	    if (!is_leaf_category(category)) {
-                category.categories = category.categories.map((sub_category, index) => {
-		    if (index != n) {
-                        exclude_group(sub_category, group)
-		    }
-                })
+		exclude_all_subcategories_except_n(category, n)
 	    } else {
 		throw new Error("Expected to find child key")
 	    }
@@ -347,13 +351,9 @@ export default function Home() {
             exclude_group(category_to_modify, group)
         } else {
             let indices_above = first_higher_category_excluding_group(indices, group)
-	    console.log("first higher excluding group", indices_above)
 	    let category_above = get_category_ref(top_level_category_copy, indices_above)
-	    console.log("a", category_above)
 	    include_group(category_above, group)
-	    console.log("b", category_above)
 	    let relative_indices = indices.slice(indices_above.length)
-	    console.log(relative_indices)
 	    include_subcategory_at_depth(category_above, relative_indices, group)
         }
 
