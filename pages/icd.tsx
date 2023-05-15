@@ -319,6 +319,25 @@ export default function Home() {
         }
 	return indices_copy
     }
+
+    // Include the subcategory referred to by indices relative to
+    // another category, by including all categories between the two
+    // and ensuring that other sibling categories are excluded.
+    function include_subcategory_at_depth(category, indices, group) {
+	console.log("h", category)
+        indices.forEach((n) => {
+	    if (!is_leaf_category(category)) {
+                category.categories = category.categories.map((sub_category, index) => {
+		    if (index != n) {
+                        exclude_group(sub_category, group)
+		    }
+                })
+	    } else {
+		throw new Error("Expected to find child key")
+	    }
+            category = category.categories[n]
+        })	
+    }
     
     function toggle_cat(indices: number[], included: boolean) {
         let top_level_category_copy = structuredClone(top_level_category);
@@ -327,28 +346,15 @@ export default function Home() {
 	    remove_all_excludes(category_to_modify, group)
             exclude_group(category_to_modify, group)
         } else {
-	    console.log("indices", indices)
             let indices_above = first_higher_category_excluding_group(indices, group)
-	    console.log("indices_above", indices_above)
+	    console.log("first higher excluding group", indices_above)
 	    let category_above = get_category_ref(top_level_category_copy, indices_above)
+	    console.log("a", category_above)
 	    include_group(category_above, group)
-	    console.log(category_above)
-	    
-            let rel_indices = indices.slice(indices_above.length);
-            let category = category_above
-            rel_indices.forEach((n) => {
-		if (!is_leaf_category(category)) {
-                    category.categories = category.categories.map((sub_category, index) => {
-			if (index != n) {
-                            exclude_group(sub_category, group)
-			}
-			return sub_category
-                    })
-		} else {
-		    throw new Error("Expected to find child key")
-		}
-                category = category.categories[n]
-            })
+	    console.log("b", category_above)
+	    let relative_indices = indices.slice(indices_above.length)
+	    console.log(relative_indices)
+	    include_subcategory_at_depth(category_above, relative_indices, group)
         }
 
         // Now save the new top_level_categorys state
