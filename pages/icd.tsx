@@ -60,34 +60,42 @@ function group_not_in_category(category, group) {
 	   (category_above.exclude.includes(group))
 }
 
-// Remove a group from the list of
-// excludes in cat (modifies cat by
-// reference). Think of this function
-// as "unexclude_group".
+
 function include_group(category: Category, group: string) {
     if (category.exclude !== undefined) {
-	// Remove the group from the exclude array
 	const index = category.exclude.indexOf(group);
         if (index > -1) {
             category.exclude.splice(index, 1);
         }
-	// Delete the exclude key if empty
 	if (category.exclude.length == 0) {
 	    delete category.exclude
 	}	
     }
 }
 
-// Add a group to the list of excludes
-// in cat, creating the exclude key
-// if nececessary (cat is modified
-// by reference)
 function exclude_group(category: Category, group: string) {
     if (category.exclude !== undefined) {
         category.exclude.push(group)
     } else {
         category.exclude = [group]
     }
+}
+
+// hidden key is really just a placemarker. Only ever
+// true or missing (this feels wrong)
+function set_hidden_status(category: Category, hidden: boolean) {
+    if (hidden) {
+	category.hidden = true
+    } else {
+	if (category.hidden !== undefined) {
+            delete category.hidden
+	}	
+    }
+}
+
+/// Assumes presence of hidden key means hidden
+function is_category_hidden(category: Category) {
+    return category.hidden !== undefined
 }
 
 // Remove all the exclude tags in this category and
@@ -144,7 +152,6 @@ function CategoryElem({ index, category, parent_exclude,
 			toggle_cat, group, outer_hidden, search_term}: CategoryData) {
 
     const included = is_ticked(category, group, parent_exclude)
-
     let [inner_hidden, setInnerHidden] = useState(false)
     
     function handleChange() {
@@ -162,9 +169,9 @@ function CategoryElem({ index, category, parent_exclude,
     }
 
     const hidden = !any_match_in_category(category, search_term)
+    set_hidden_status(category, hidden)
     
     if (is_leaf_category(category)) {
-	// Leaf
 	return <div className={hidden ? styles.hidden : {}}>
 	    <Checkbox checked={included}
 		      onChange={handleChange} />
@@ -177,12 +184,9 @@ function CategoryElem({ index, category, parent_exclude,
 		</span>
 	    </span>
 	</div>	
-    } else {
-	
+    } else {	
 	const hidden_list = hidden_category_indices(category.categories)
-
-	// Non-leaf
-	return <div className={hidden ? styles.hidden : {}}>
+	return <div className={is_category_hidden(category) ? styles.hidden : {}}>
 	    <span className={styles.checkbox}>
 		<Checkbox checked={included}
 			  onChange={handleChange} />
@@ -226,6 +230,33 @@ function get_category_ref(top_level_category: TopLevelCategory, indices: number[
 	}
     })
     return category;
+}
+
+function exclude_all_subcategories_except_n(category, n) {
+    category.categories.map((sub_category, index) => {
+	if (index != n) {
+            exclude_group(sub_category, group)
+	}
+    })
+}
+
+function category_excludes_group(category, group) {
+    return (category.exclude !== undefined) &&
+	   (category.exclude.includes(group))
+}
+
+// Include the subcategory referred to by indices relative to
+// another category, by including all categories between the two
+// and ensuring that other sibling categories are excluded.
+function include_subcategory_at_depth(category, indices, group) {
+    indices.forEach((n) => {
+	if (!is_leaf_category(category)) {
+	    exclude_all_subcategories_except_n(category, n)
+	} else {
+	    throw new Error("Expected to find child key")
+	}
+        category = category.categories[n]
+    })	
 }
 
 export default function Home() {
@@ -303,11 +334,7 @@ export default function Home() {
 	console.log(searchTerm)
     };
 
-    function category_excludes_group(category, group) {
-	return (category.exclude !== undefined) &&
-	       (category.exclude.includes(group))
-    }
-	    
+
     function first_higher_category_excluding_group(category_indices, group) {
 	let indices_copy = category_indices.slice()
 	while (true) {
@@ -318,29 +345,6 @@ export default function Home() {
 	    indices_copy.pop()
         }
 	return indices_copy
-    }
-
-    function exclude_all_subcategories_except_n(category, n) {
-        category.categories.map((sub_category, index) => {
-	    if (index != n) {
-                exclude_group(sub_category, group)
-	    }
-        })
-
-    }
-    
-    // Include the subcategory referred to by indices relative to
-    // another category, by including all categories between the two
-    // and ensuring that other sibling categories are excluded.
-    function include_subcategory_at_depth(category, indices, group) {
-        indices.forEach((n) => {
-	    if (!is_leaf_category(category)) {
-		exclude_all_subcategories_except_n(category, n)
-	    } else {
-		throw new Error("Expected to find child key")
-	    }
-            category = category.categories[n]
-        })	
     }
     
     function toggle_cat(indices: number[], included: boolean) {
@@ -356,8 +360,6 @@ export default function Home() {
 	    let relative_indices = indices.slice(indices_above.length)
 	    include_subcategory_at_depth(category_above, relative_indices, group)
         }
-
-        // Now save the new top_level_categorys state
         setTopLevelCategory(top_level_category_copy)
     }
     
