@@ -256,13 +256,6 @@ function include_subcategory_at_depth(category, indices, group) {
     })
 }
 
-function exclude_category_and_visible_subcategories(category, group) {
-    include_visible_category_tree(category, group)
-    if (!is_hidden(category)) {
-	exclude_group(category, group)
-    }
-}
-
 function first_super_category_excluding_group(top_level_category, category_indices, group) {
     let indices_copy = category_indices.slice()
     while (true) {
@@ -275,7 +268,7 @@ function first_super_category_excluding_group(top_level_category, category_indic
     return indices_copy
 }
 
-function exclude_invisible_subcategories(category, group) {
+function exclude_invisible_sub_categories(category, group) {
     category.categories.map(sub_category => {
 	if (is_hidden(sub_category)) {
 	    exclude_group(sub_category, group)
@@ -283,14 +276,24 @@ function exclude_invisible_subcategories(category, group) {
     })
 }
 
-function include_category_and_visible_subcategories(top_level_category, indices, group) {
-    let indices_above = first_super_category_excluding_group(top_level_category, indices, group)
-    let super_category = get_category_ref(top_level_category, indices_above)
-    include_group(super_category, group)
-    let relative_indices = indices.slice(indices_above.length)
-    include_subcategory_at_depth(super_category, relative_indices, group)
-    let category = get_category_ref(top_level_category, indices)
-    exclude_invisible_subcategories(category, group)
+function exclude_all_visible_sub_categories(category, group) {
+    
+    /* include_visible_category_tree(category, group)
+     * if (!is_hidden(category)) {
+       exclude_group(category, group)
+     * } */
+}
+
+
+function include_all_visible_sub_categories(top_level_category, indices, group) {
+    
+    /* let indices_above = first_super_category_excluding_group(top_level_category, indices, group)
+     * let super_category = get_category_ref(top_level_category, indices_above)
+     * include_group(super_category, group)
+     * let relative_indices = indices.slice(indices_above.length)
+     * include_subcategory_at_depth(super_category, relative_indices, group)
+     * let category = get_category_ref(top_level_category, indices)
+     * exclude_invisible_subcategories(category, group) */
 }
 
 export default function Home() {
@@ -368,11 +371,11 @@ export default function Home() {
         let top_level_category_copy = structuredClone(top_level_category);
         let category_to_modify = get_category_ref(top_level_category_copy, indices)
         if (included) {
-	    exclude_category_and_visible_subcategories(category_to_modify, group)
+	    exclude_all_visible_sub_categories(category_to_modify, group)
         } else {
-	    include_category_and_visible_subcategories(top_level_category_copy,
-						       indices,
-						       group)
+	    include_all_visible_sub_categories(top_level_category_copy,
+					      indices,
+					      group)
         }
         setTopLevelCategory(top_level_category_copy)
     }
