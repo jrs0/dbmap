@@ -247,7 +247,7 @@ function category_excludes_group(category, group) {
 // and ensuring that other sibling categories are excluded.
 function include_subcategory_at_depth(category, indices, group) {
     indices.forEach((n) => {
-	if (!is_leaf_category(category)) {
+	if (!is_leaf_category(category)&& !is_hidden(category)) {
 	    exclude_all_subcategories_except_n(category, n, group)
 	} else {
 	    throw new Error("Expected to find child key")
@@ -256,21 +256,42 @@ function include_subcategory_at_depth(category, indices, group) {
     })	
 }
 
+function exclude_category_and_visible_subcategories(category, group) {
+    include_visible_category_tree(category, group)
+    exclude_group(category, group)	
+}
+
+function first_higher_category_excluding_group(top_level_category, category_indices, group) {
+    let indices_copy = category_indices.slice()
+    while (true) {
+	let category = get_category_ref(top_level_category, indices_copy)
+	if (category_excludes_group(category, group)) {
+	    break;
+	}
+	indices_copy.pop()
+    }
+    return indices_copy
+}
+
+function include_category_and_visible_subcategories(top_level_category, indices, group) {
+    let indices_above = first_higher_category_excluding_group(top_level_category, indices, group)
+    let category_above = get_category_ref(top_level_category, indices_above)
+    include_group(category_above, group)
+    let relative_indices = indices.slice(indices_above.length)
+    include_subcategory_at_depth(category_above, relative_indices, group)
+}
+
 export default function Home() {
 
     let [top_level_category, setTopLevelCategory] = useState<TopLevelCategory>({categories: [], groups: []});
-
     const [searchTerm, setSearchTerm] = useState('');
-
     
-    // Function to save the codes yaml file
     function save_file() {
         invoke('save_yaml', {
 	    topLevelCategory: top_level_category
 	})
     }
 
-    // Function to get the list of groups
     function get_groups() {
 	if (top_level_category.groups.length != 0) {
             return top_level_category.groups
@@ -330,32 +351,6 @@ export default function Home() {
 	setSearchTerm(event.target.value);
 	console.log(searchTerm)
     };
-
-
-    function first_higher_category_excluding_group(category_indices, group) {
-	let indices_copy = category_indices.slice()
-	while (true) {
-	    let category = get_category_ref(top_level_category, indices_copy)
-	    if (category_excludes_group(category, group)) {
-		break;
-	    }
-	    indices_copy.pop()
-        }
-	return indices_copy
-    }
-
-    function exclude_category_and_visible_subcategories(category, group) {
-	include_visible_category_tree(category, group)
-        exclude_group(category, group)	
-    }
-
-    function include_category_and_visible_subcategories(top_level_category, indices, group) {
-        let indices_above = first_higher_category_excluding_group(indices, group)
-	let category_above = get_category_ref(top_level_category, indices_above)
-	include_group(category_above, group)
-	let relative_indices = indices.slice(indices_above.length)
-	include_subcategory_at_depth(category_above, relative_indices, group)
-    }
     
     function toggle_cat(indices: number[], included: boolean) {
         let top_level_category_copy = structuredClone(top_level_category);
