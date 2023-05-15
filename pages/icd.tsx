@@ -54,12 +54,10 @@ function is_ticked(category: Category, group: string, parent_exclude: boolean) {
     return included
 }
 
-
 function group_not_in_category(category, group) {
     return (category_above.exclude !== undefined) &&
 	   (category_above.exclude.includes(group))
 }
-
 
 function include_group(category: Category, group: string) {
     if (category.exclude !== undefined) {
@@ -73,17 +71,9 @@ function include_group(category: Category, group: string) {
     }
 }
 
-function exclude_group(category: Category, group: string) {
-    if (category.exclude !== undefined) {
-        category.exclude.push(group)
-    } else {
-        category.exclude = [group]
-    }
-}
-
-// hidden key is really just a placemarker. Only ever
-// true or missing (this feels wrong)
-function set_hidden_status(category: Category, hidden: boolean) {
+function hide_category(category: Category, hidden: boolean) {
+    // hidden key is really just a placemarker. Only ever
+    // true or missing (this feels wrong)
     if (hidden) {
 	category.hidden = true
     } else {
@@ -93,24 +83,31 @@ function set_hidden_status(category: Category, hidden: boolean) {
     }
 }
 
-/// Assumes presence of hidden key means hidden
-function is_category_hidden(category: Category) {
+function is_hidden(category: Category) {
+    /// Assumes presence of hidden key means hidden
     return category.hidden !== undefined
 }
 
-// Remove all the exclude tags in this category and
-// all its subcategories in place.
-// sublevels of category and return the result
-function remove_all_excludes(category: Category, group: string) {
-    include_group(category, group)
-    if (!is_leaf_category(category)) {
-        category.categories.map((sub_category) => (
-	    remove_all_excludes(sub_category, group)
-	))
+function include_visible_category_tree(category: Category, group: string) {
+    if (!is_hidden(category)) {
+	include_group(category, group)
+	if (!is_leaf_category(category)) {
+            category.categories.map((sub_category) => (
+		include_visible_category_tree(sub_category, group)
+	    ))
+	}
     }
 }
 
-// Props for a category or code element
+function exclude_group(category: Category, group: string) {
+    if (category.exclude !== undefined) {
+        category.exclude.push(group)
+    } else {
+        category.exclude = [group]
+    }
+}
+
+
 interface CategoryData {
     index: number, // Where is this category in the parent child list
     category: Category, // The data for this category
@@ -169,7 +166,7 @@ function CategoryElem({ index, category, parent_exclude,
     }
 
     const hidden = !any_match_in_category(category, search_term)
-    set_hidden_status(category, hidden)
+    hide_category(category, hidden)
     
     if (is_leaf_category(category)) {
 	return <div className={hidden ? styles.hidden : {}}>
@@ -186,7 +183,7 @@ function CategoryElem({ index, category, parent_exclude,
 	</div>	
     } else {	
 	const hidden_list = hidden_category_indices(category.categories)
-	return <div className={is_category_hidden(category) ? styles.hidden : {}}>
+	return <div className={is_hidden(category) ? styles.hidden : {}}>
 	    <span className={styles.checkbox}>
 		<Checkbox checked={included}
 			  onChange={handleChange} />
@@ -232,7 +229,7 @@ function get_category_ref(top_level_category: TopLevelCategory, indices: number[
     return category;
 }
 
-function exclude_all_subcategories_except_n(category, n) {
+function exclude_all_subcategories_except_n(category, n, group) {
     category.categories.map((sub_category, index) => {
 	if (index != n) {
             exclude_group(sub_category, group)
@@ -251,7 +248,7 @@ function category_excludes_group(category, group) {
 function include_subcategory_at_depth(category, indices, group) {
     indices.forEach((n) => {
 	if (!is_leaf_category(category)) {
-	    exclude_all_subcategories_except_n(category, n)
+	    exclude_all_subcategories_except_n(category, n, group)
 	} else {
 	    throw new Error("Expected to find child key")
 	}
@@ -346,19 +343,29 @@ export default function Home() {
         }
 	return indices_copy
     }
+
+    function exclude_category_and_visible_subcategories(category, group) {
+	include_visible_category_tree(category, group)
+        exclude_group(category, group)	
+    }
+
+    function include_category_and_visible_subcategories(top_level_category, indices, group) {
+        let indices_above = first_higher_category_excluding_group(indices, group)
+	let category_above = get_category_ref(top_level_category, indices_above)
+	include_group(category_above, group)
+	let relative_indices = indices.slice(indices_above.length)
+	include_subcategory_at_depth(category_above, relative_indices, group)
+    }
     
     function toggle_cat(indices: number[], included: boolean) {
         let top_level_category_copy = structuredClone(top_level_category);
         let category_to_modify = get_category_ref(top_level_category_copy, indices)
         if (included) {
-	    remove_all_excludes(category_to_modify, group)
-            exclude_group(category_to_modify, group)
+	    exclude_category_and_visible_subcategories(category_to_modify, group)
         } else {
-            let indices_above = first_higher_category_excluding_group(indices, group)
-	    let category_above = get_category_ref(top_level_category_copy, indices_above)
-	    include_group(category_above, group)
-	    let relative_indices = indices.slice(indices_above.length)
-	    include_subcategory_at_depth(category_above, relative_indices, group)
+	    include_category_and_visible_subcategories(top_level_category_copy,
+						       indices,
+						       group)
         }
         setTopLevelCategory(top_level_category_copy)
     }
