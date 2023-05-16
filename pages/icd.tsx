@@ -180,7 +180,8 @@ function CategoryElem({ index, category, parent_excluded,
 			toggle_cat, group, outer_hidden, search_term}: CategoryData) {
 
     const ticked = is_ticked(category, group, parent_excluded)
-
+    const excluded = is_excluded(category, group, parent_excluded)
+    
     function handleChange() {
         toggle_cat([index], ticked)
     }
@@ -225,7 +226,7 @@ function CategoryElem({ index, category, parent_excluded,
 		    return <li key={node.index}>
 			<CategoryElem index={index}
 				      category={node}
-				      parent_exclude={!ticked}
+				      parent_excluded={excluded}
 				      toggle_cat={toggle_cat_sub}
 				      group={group}
 				      outer_hidden={hidden_list[index]}
@@ -436,7 +437,7 @@ export default function Home() {
 		    return <li key={node.index}>
 			<CategoryElem index={index}
 				      category={node}
-				      parent_exclude={false}
+				      parent_excluded={false}
 				      toggle_cat={toggle_cat}
 				      group={group}
 				      search_term={searchTerm.toLowerCase()}
