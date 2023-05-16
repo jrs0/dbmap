@@ -34,7 +34,7 @@ interface Category {
     exclude?: string[];
 }
 
-function is_leaf_category(category) {
+function is_leaf(category: Category) {
     return category.categories === undefined
 }
 
@@ -88,8 +88,16 @@ function is_hidden(category: Category) {
     return category.hidden !== undefined
 }
 
-function is_visible(category) {
+function is_visible(category: Category) {
     return !is_hidden(category)
+}
+
+function sub_categories(category: Category) {
+    if (!is_leaf(category)) {
+	return category.categories
+    } else {
+	return []
+    }
 }
 
 function include_all_visible_categories_in_subtree(category: Category, group: string) {
@@ -143,7 +151,7 @@ function name_contains_match(category, lower_case_search_term) {
 }
 
 function any_match_in_category(category, lower_case_search_term) {
-    if (is_leaf_category(category)) {
+    if (is_leaf(category)) {
 	return (docs_contains_match(category, lower_case_search_term))
 	    || (name_contains_match(category, lower_case_search_term))
     } else {
@@ -158,7 +166,7 @@ function any_match_in_category(category, lower_case_search_term) {
 function CategoryElem({ index, category, parent_exclude,
 			toggle_cat, group, outer_hidden, search_term}: CategoryData) {
 
-    const included = is_ticked(category, group, parent_exclude)
+    const included = is_included(category, group, parent_exclude)
 
     function handleChange() {
         toggle_cat([index], included)
@@ -176,7 +184,7 @@ function CategoryElem({ index, category, parent_exclude,
     
     hide_category(category, !any_match_in_category(category, search_term))
     
-    if (is_leaf_category(category)) {
+    if (is_leaf(category)) {
 	return <div className={is_hidden(category) ? styles.hidden : {}}>
 	    <Checkbox checked={included}
 		      onChange={handleChange} />
@@ -228,7 +236,7 @@ function get_category_ref(top_level_category: TopLevelCategory, indices: number[
     // category to plain category)
     let category = top_level_category.categories[indices[0]];
     indices.slice(1).forEach((n) => {
-	if (!is_leaf_category(category)) {
+	if (!is_leaf(category)) {
 	    category = category.categories[n]
 	} else {
 	    throw new Error("Expected to find a category in get_category_ref() (wrong indices?)");
@@ -237,24 +245,12 @@ function get_category_ref(top_level_category: TopLevelCategory, indices: number[
     return category;
 }
 
-function exclude_all_sub_categories_except_n(category, n, group) {
-    category.categories.map((sub_category, index) => {
-	if (index != n) {
-	    exclude_group(sub_category, group)
-	}
-    })
-}
-
-function category_excludes_group(category, group) {
-    return (category.exclude !== undefined) &&
-	   (category.exclude.includes(group))
-}
 
 function first_super_category_excluding_group(top_level_category, category_indices, group) {
     let indices_copy = category_indices.slice()
     while (true) {
 	let category = get_category_ref(top_level_category, indices_copy)
-	if (category_excludes_group(category, group)) {
+	if (has_group_in_exclude_list(category, group)) {
 	    break;
 	}
 	indices_copy.pop()
@@ -262,9 +258,16 @@ function first_super_category_excluding_group(top_level_category, category_indic
     return indices_copy
 }
 
+
+function exclude_all_sub_categories_except_n(category, n, group) {
+    sub_categories(category)
+	.splice(n, 1)
+	.map(sub_category => remove_group_from_exclude_list(sub_category, group))
+}
+
 function make_include_path_to_sub_category(super_category, relative_indices, group) {
     relative_indices.forEach((n) => {
-	if (!is_leaf_category(super_category)) {
+	if (!is_leaf(super_category)) {
 	    exclude_all_sub_categories_except_n(super_category, n, group)
 	} else {
 	    throw new Error("Expected to find child key")
@@ -273,59 +276,24 @@ function make_include_path_to_sub_category(super_category, relative_indices, gro
     })
 }
 
-function sub_categories(category) {
-    if (!is_leaf_category(category)) {
-	return category.categories
-    } else {
-	return []
-    }
-}
+function exclude_visible_subtree_from_group(category, group) {
+    let hidden_and_included_count = sub_categories(category)
+	.filter(sub_category =>
+	    is_hidden(sub_category) &&
+	    !has_group_in_exclude_list(sub_category, group))
+	.length
 
-function exclude_invisible_sub_categories(category, group) {
-    sub_categories(category).map(sub_category => {
-	if (is_hidden(sub_category)) {
-	    exclude_group(sub_category, group)
-	}
-    })
-}
-
-function exclude_visible_sub_categories(category, group) {
-    if (is_leaf_category(category)) {
-	if (is_visible(category)) {
-	    append_group_to_exclude_list(category, group)
-	}
+    if (hidden_and_included_count === 0) {
+	remove_group_exclude_from_sub_tree(category, group)
+	append_group_to_exclude_list(category, group)
     } else {
 	sub_categories(category)
 	    .filter(is_visible)
-	    .map(sub_category => {
-		exclude_visible_sub_categories(sub_category, group)
-	    })
+	    .map(sub_category =>
+		exclude_visible_subtree_from_group(sub_category, group))
     }
 }
 
-function include_visible_sub_categories(top_level_category, indices, group) {
-    if (is_leaf_category(category)) {
-	if (is_visible(category)) {
-	    // needs the parent to be included
-	    remove_group_from_exclude_list(category, group)
-	}
-    } else {
-	sub_categories(category)
-	    .filter(is_visible)
-	    .map(sub_category => {
-		
-	    })
-	
-    }
-    
-    /* let indices_above = first_super_category_excluding_group(top_level_category, indices, group)
-     * let super_category = get_category_ref(top_level_category, indices_above)
-     * include_group(super_category, group)
-     * let relative_indices = indices.slice(indices_above.length)
-     * include_subcategory_at_depth(super_category, relative_indices, group)
-     * let category = get_category_ref(top_level_category, indices)
-     * exclude_invisible_subcategories(category, group) */
-}
 
 export default function Home() {
 
@@ -398,27 +366,7 @@ export default function Home() {
 	console.log(searchTerm)
     };
 
-    /// Exclude this category from the group. Leave the category
-    /// in canonical form, i.e., only the top level has an exclude,
-    /// and there are no exclude keys at any level down for this
-    /// group
-    function exclude_category_from_group(category, group) {
-	// Start by removing everything all the excludes
-	remove_group_exclude_from_sub_tree(category, group)
-	// Put back only the top level exclude
-	append_group_to_exclude_list(category, group)
-    }
-
-    function include_category_in_group(top_level_categpry, category_indices, group) {
-	// First, a path must be made to include this category
-	// itself. All categories above can be assumed to be
-	// visible (since otherwise this category could not be
-	// clicked); however, their siblings are not necessarily
-	// visible. The first step is to find the first higher-
-	// up category excluded by the group. Since the higher
-	// category has an exclude, it is possible to assume that
-	// it is in canonical form, and everything below it is
-	// excluded (even invisible sibling categories)
+    function include_visible_subtree_in_group(top_level_category, category_indices, group) {
 	const super_category_indices = first_super_category_excluding_group(top_level_category,
 									    category_indices,
 									    group)
@@ -426,31 +374,17 @@ export default function Home() {
 	const super_category = get_category_ref(top_level_category,
 						super_category_indices)
 	make_include_path_to_sub_category(super_category, relative_indices, group)
-
-	// Now the current category is not part of an excluded subtree,
-	// need to also include all the visible sub categories
-	
-	
+	let category = get_category_ref(top_level_category, category_indices)
+	include_all_visible_categories_in_subtree(category, group)
     }
     
     function toggle_cat(indices: number[], ticked: boolean) {
         let top_level_category_copy = structuredClone(top_level_category);
         let category = get_category_ref(top_level_category_copy, indices)
         if (ticked) {
-	    // If the item is ticked, then in needs to be unticked. Everything visible
-	    // beneath this level should be excluded
-	    sub_categories(category)
-		.filter(is_visible)
-		.map(sub_category => exclude_category_from_group(sub_category, group))
+	    exclude_visible_subtree_from_group()
         } else {
-	    // If the item is unticked, then nothing visible below this level is included.
-	    // All visible items should be included.
-	    sub_categories(category)
-		.filter(is_visible)
-		.map(sub_category => include_category_in_group(
-		    top_level_category_copy,
-		    category_indices,
-		    group))
+	    include_visible_subtree_in_group(top_level_category, indices, group)
         }
         setTopLevelCategory(top_level_category_copy)
     }
