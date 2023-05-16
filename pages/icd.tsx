@@ -100,6 +100,19 @@ function sub_categories(category: Category) {
     }
 }
 
+function is_ticked(category: Category, group: string, parent_excluded: boolean) {
+    if (parent_excluded) {
+	return false
+    } else if (is_leaf(category)) {
+	return !has_group_in_exclude_list(category, group)
+    } else {
+	return sub_categories(category)
+	    .filter(is_visible)
+	    .map(sub_category => is_ticked(sub_category, group))
+	    .some(Boolean)
+    }
+}
+
 function include_all_visible_categories_in_subtree(category: Category, group: string) {
     if (has_group_in_exclude_list(category, group)) {
 	remove_group_from_exclude_list(category, group)
@@ -118,7 +131,7 @@ function include_all_visible_categories_in_subtree(category: Category, group: st
 function remove_group_exclude_from_sub_tree(category, group) {
     remove_group_from_exclude_list(category, group)
     sub_categories(category).map(sub_category =>
-	remove_group_exclude_from_subtree(sub_category, group))
+	remove_group_exclude_from_sub_tree(sub_category, group))
 }
 
 interface CategoryData {
@@ -163,13 +176,13 @@ function any_match_in_category(category, lower_case_search_term) {
     }
 }
 
-function CategoryElem({ index, category, parent_exclude,
+function CategoryElem({ index, category, parent_excluded,
 			toggle_cat, group, outer_hidden, search_term}: CategoryData) {
 
-    const included = is_included(category, group, parent_exclude)
+    const ticked = is_ticked(category, group, parent_excluded)
 
     function handleChange() {
-        toggle_cat([index], included)
+        toggle_cat([index], ticked)
     }
 
     function hidden_category_indices(categories) {
@@ -177,16 +190,16 @@ function CategoryElem({ index, category, parent_exclude,
 	return category_indices
     }
     
-    function toggle_cat_sub(indices: number[], included: boolean) {
+    function toggle_cat_sub(indices: number[], ticked: boolean) {
         let new_indices = [index].concat(indices)
-        toggle_cat(new_indices, included)
+        toggle_cat(new_indices, ticked)
     }
     
     hide_category(category, !any_match_in_category(category, search_term))
     
     if (is_leaf(category)) {
 	return <div className={is_hidden(category) ? styles.hidden : {}}>
-	    <Checkbox checked={included}
+	    <Checkbox checked={ticked}
 		      onChange={handleChange} />
 	    <span>
 		<span className={styles.category_name}>
@@ -201,7 +214,7 @@ function CategoryElem({ index, category, parent_exclude,
 	const hidden_list = hidden_category_indices(category.categories)
 	return <div className={is_hidden(category) ? styles.hidden : {}}>
 	    <span className={styles.checkbox}>
-		<Checkbox checked={included}
+		<Checkbox checked={ticked}
 			  onChange={handleChange} />
 	    </span>
 	    <span className={styles.category_header} onClick={() => setInnerHidden(!inner_hidden)}>
@@ -212,7 +225,7 @@ function CategoryElem({ index, category, parent_exclude,
 		    return <li key={node.index}>
 			<CategoryElem index={index}
 				      category={node}
-				      parent_exclude={!included}
+				      parent_exclude={!ticked}
 				      toggle_cat={toggle_cat_sub}
 				      group={group}
 				      outer_hidden={hidden_list[index]}
@@ -276,7 +289,7 @@ function make_include_path_to_sub_category(super_category, relative_indices, gro
     })
 }
 
-function exclude_visible_subtree_from_group(category, group) {
+function exclude_visible_subtree_from_group(category: Category, group: string) {
     let hidden_and_included_count = sub_categories(category)
 	.filter(sub_category =>
 	    is_hidden(sub_category) &&
@@ -324,7 +337,6 @@ export default function Home() {
     if(searchTerm.length > 0) {
 	open = true;
     }
-    console.log(searchTerm, searchTerm.length, open)
     
     // Function to load the codes yaml file
     function load_file() {
@@ -333,7 +345,6 @@ export default function Home() {
 
 		// From rust
 		let res: TopLevelCategory = JSON.parse(result as string);
-		console.log(res)
 		
 		// Currently just a quick hack to avoid crashing if
 		// the user closes the dialog box
@@ -357,13 +368,11 @@ export default function Home() {
     }
 
     const handleGroupChange = (event: ChangeEvent<HTMLSelectElement>) => {
-        //console.log(event.target.value)
         setGroup(event.target.value);
     };
 
     const handleSearchTermChange = (event: React.ChangeEvent<any>) => {
 	setSearchTerm(event.target.value);
-	console.log(searchTerm)
     };
 
     function include_visible_subtree_in_group(top_level_category, category_indices, group) {
@@ -382,7 +391,7 @@ export default function Home() {
         let top_level_category_copy = structuredClone(top_level_category);
         let category = get_category_ref(top_level_category_copy, indices)
         if (ticked) {
-	    exclude_visible_subtree_from_group()
+	    exclude_visible_subtree_from_group(category, group)
         } else {
 	    include_visible_subtree_in_group(top_level_category, indices, group)
         }
