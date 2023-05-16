@@ -38,26 +38,37 @@ function is_leaf_category(category) {
     return category.categories === undefined
 }
 
-// Establish whether the component should be included
-// (i.e. ticked) and whether it should be enabled
-// (grayed out or not)
-function is_ticked(category: Category, group: string, parent_exclude: boolean) {
-    // Component is included by default, unless there
-    // is an exclude tag at the current level, or
-    // the parent is excluded
-    let exclude_tag = false
+function append_group_to_exclude_list(category: Category, group: string) {
     if (category.exclude !== undefined) {
-	exclude_tag = category.exclude.includes(group);
+        category.exclude.push(group)
+    } else {
+        category.exclude = [group]
     }
-    
-    let included = !exclude_tag && !parent_exclude
-
-    return included
 }
 
-function group_not_in_category(category, group) {
-    return (category_above.exclude !== undefined) &&
-	   (category_above.exclude.includes(group))
+function remove_group_from_exclude_list(category: Category, group: string) {
+    if (category.exclude !== undefined) {
+	const index = category.exclude.indexOf(group);
+        if (index > -1) {
+            category.exclude.splice(index, 1);
+        }
+	if (category.exclude.length == 0) {
+	    delete category.exclude
+	}	
+    }
+}
+
+function has_group_in_exclude_list(category: Category, group: string) {
+    return (category.exclude !== undefined)
+	&& category.exclude.includes(group);
+}
+
+function is_excluded(category: Category, group: string, parent_excluded: boolean) {
+    return has_group_in_exclude_list(category, group) || parent_excluded
+}
+
+function is_included(category: Category, group: string, parent_excluded: boolean) {
+    return !is_excluded(category, group, parent_excluded)
 }
 
 function hide_category(category: Category, hidden: boolean) {
@@ -81,26 +92,16 @@ function is_visible(category) {
     return !is_hidden(category)
 }
 
-function include_visible_category_tree(category: Category, group: string) {
-}
-
-function append_group_to_exclude_list(category: Category, group: string) {
-    if (category.exclude !== undefined) {
-        category.exclude.push(group)
+function include_all_visible_categories_in_subtree(category: Category, group: string) {
+    if (has_group_in_exclude_list(category, group)) {
+	remove_group_from_exclude_list(category, group)
+	sub_categories(category)
+	    .filter(is_hidden)
+	    .map(sub_category => append_group_to_exclude_list(sub_category, group))
     } else {
-        category.exclude = [group]
-    }
-}
-
-function remove_group_from_exclude_list(category: Category, group: string) {
-    if (category.exclude !== undefined) {
-	const index = category.exclude.indexOf(group);
-        if (index > -1) {
-            category.exclude.splice(index, 1);
-        }
-	if (category.exclude.length == 0) {
-	    delete category.exclude
-	}	
+	sub_categories(category)
+	    .filter(is_visible)
+	    .map(sub_category => include_all_visible_categories_in_subtree(sub_category, group))
     }
 }
 
