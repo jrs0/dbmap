@@ -213,9 +213,11 @@ function first_super_category_excluding_group(top_level_category, category_indic
 
 function exclude_all_sub_categories_except_nth(category, n, group) {
     sub_categories(category)
-    // Here is the bug -- splice removes in place! Wanted to just filter
-	.splice(n, 1)
-	.map(sub_category => append_group_to_exclude_list(sub_category, group))
+	.map((sub_category, index) => {
+	    if (index != n) {
+		append_group_to_exclude_list(sub_category, group)
+	    }
+	})
 }
 
 function make_include_path_to_sub_category(super_category, relative_indices, group) {
