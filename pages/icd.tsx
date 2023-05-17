@@ -71,58 +71,11 @@ function is_included(category: Category, group: string, parent_excluded: boolean
     return !is_excluded(category, group, parent_excluded)
 }
 
-function hide_category(category: Category, hidden: boolean) {
-    // hidden key is really just a placemarker. Only ever
-    // true or missing (this feels wrong)
-    if (hidden) {
-	category.hidden = true
-    } else {
-	if (category.hidden !== undefined) {
-            delete category.hidden
-	}	
-    }
-}
-
-function is_hidden(category: Category) {
-    /// Assumes presence of hidden key means hidden
-    return category.hidden !== undefined
-}
-
-function is_visible(category: Category) {
-    return !is_hidden(category)
-}
-
 function sub_categories(category: Category) {
     if (!is_leaf(category)) {
 	return category.categories
     } else {
 	return []
-    }
-}
-
-function is_ticked(category: Category, group: string, parent_excluded: boolean) {
-    if (parent_excluded) {
-	return false
-    } else if (is_leaf(category)) {
-	return !has_group_in_exclude_list(category, group)
-    } else {
-	return sub_categories(category)
-	    .filter(is_visible)
-	    .map(sub_category => is_ticked(sub_category, group))
-	    .some(Boolean)
-    }
-}
-
-function include_all_visible_categories_in_subtree(category: Category, group: string) {
-    if (has_group_in_exclude_list(category, group)) {
-	remove_group_from_exclude_list(category, group)
-	sub_categories(category)
-	    .filter(is_hidden)
-	    .map(sub_category => append_group_to_exclude_list(sub_category, group))
-    } else {
-	sub_categories(category)
-	    .filter(is_visible)
-	    .map(sub_category => include_all_visible_categories_in_subtree(sub_category, group))
     }
 }
 
@@ -163,43 +116,30 @@ function name_contains_match(category, lower_case_search_term) {
     return category.name.toLowerCase().includes(lower_case_search_term)
 }
 
-function any_match_in_category(category, lower_case_search_term) {
-    if (is_leaf(category)) {
-	return (docs_contains_match(category, lower_case_search_term))
-	    || (name_contains_match(category, lower_case_search_term))
-    } else {
-	return category
-	    .categories
-	    .map(sub_category => any_match_in_category(sub_category,
-						       lower_case_search_term))
-	    .some(Boolean)
-    }
-}
-
 function CategoryElem({ index, category, parent_excluded,
-			toggle_cat, group, outer_hidden, search_term}: CategoryData) {
-
-    const ticked = is_ticked(category, group, parent_excluded)
+			toggle_cat, group, search_term}: CategoryData) {
+    
+    const [hidden, setHidden] = useState(true)
+    
+    const included = is_included(category, group, parent_excluded)
     const excluded = is_excluded(category, group, parent_excluded)
     
     function handleChange() {
-        toggle_cat([index], ticked)
+        toggle_cat([index], included)
     }
-
+    
     function hidden_category_indices(categories) {
 	let category_indices = categories.map(node => (!node.docs.toLowerCase().includes(search_term)))
 	return category_indices
     }
     
-    function toggle_cat_sub(indices: number[], ticked: boolean) {
+    function toggle_cat_sub(indices: number[], included: boolean) {
         let new_indices = [index].concat(indices)
-        toggle_cat(new_indices, ticked)
+        toggle_cat(new_indices, included)
     }
     
-    hide_category(category, !any_match_in_category(category, search_term))
-    
     if (is_leaf(category)) {
-	return <div className={is_hidden(category) ? styles.hidden : {}}>
+	return <div>
 	    <Checkbox checked={ticked}
 		      onChange={handleChange} />
 	    <span>
@@ -212,26 +152,26 @@ function CategoryElem({ index, category, parent_excluded,
 	    </span>
 	</div>	
     } else {	
-	const hidden_list = hidden_category_indices(category.categories)
-	return <div className={is_hidden(category) ? styles.hidden : {}}>
+	return <div>
 	    <span className={styles.checkbox}>
 		<Checkbox checked={ticked}
 			  onChange={handleChange} />
 	    </span>
-	    <span className={styles.category_header} onClick={() => setInnerHidden(!inner_hidden)}>
+	    <span className={styles.category_header}
+		  onClick={() => setHidden(!hidden)}>
 		<CategoryHeader category={category} />
 	    </span>
 	    <ol className={styles.category_list}> {
 		category.categories.map((node,index) => {
-		    return <li key={node.index}>
-			<CategoryElem index={index}
-				      category={node}
-				      parent_excluded={excluded}
-				      toggle_cat={toggle_cat_sub}
-				      group={group}
-				      outer_hidden={hidden_list[index]}
-				      search_term={search_term} />
-		    </li>
+		    if (!hidden) {
+			return <li key={node.index}>
+			    <CategoryElem index={index}
+					  category={node}
+					  parent_excluded={!included}
+					  toggle_cat={toggle_cat_sub}
+					  group={group} />
+			</li>
+		    }
 		})
 	    } </ol>
 	</div>
@@ -242,7 +182,6 @@ interface TopLevelCategory {
     categories: Category[]
     groups: string[]
 }
-
 
 function get_category_ref(top_level_category: TopLevelCategory, indices: number[]) {
 
@@ -259,7 +198,6 @@ function get_category_ref(top_level_category: TopLevelCategory, indices: number[
     return category;
 }
 
-
 function first_super_category_excluding_group(top_level_category, category_indices, group) {
     let indices_copy = category_indices.slice()
     while (true) {
@@ -272,8 +210,7 @@ function first_super_category_excluding_group(top_level_category, category_indic
     return indices_copy
 }
 
-
-function exclude_all_sub_categories_except_n(category, n, group) {
+function exclude_all_sub_categories_except_nth(category, n, group) {
     sub_categories(category)
 	.splice(n, 1)
 	.map(sub_category => remove_group_from_exclude_list(sub_category, group))
@@ -376,7 +313,7 @@ export default function Home() {
 	setSearchTerm(event.target.value);
     };
 
-    function include_visible_subtree_in_group(top_level_category, category_indices, group) {
+    function include_subtree_in_group(top_level_category, category_indices, group) {
 	const super_category_indices = first_super_category_excluding_group(top_level_category,
 									    category_indices,
 									    group)
@@ -384,17 +321,18 @@ export default function Home() {
 	const super_category = get_category_ref(top_level_category,
 						super_category_indices)
 	make_include_path_to_sub_category(super_category, relative_indices, group)
-	let category = get_category_ref(top_level_category, category_indices)
-	include_all_visible_categories_in_subtree(category, group)
+	/* let category = get_category_ref(top_level_category, category_indices)
+	   include_all_visible_categories_in_subtree(category, group) */
     }
     
-    function toggle_cat(indices: number[], ticked: boolean) {
+    function toggle_cat(indices: number[], ticked: included) {
         let top_level_category_copy = structuredClone(top_level_category);
         let category = get_category_ref(top_level_category_copy, indices)
-        if (ticked) {
-	    exclude_visible_subtree_from_group(category, group)
+        if (included) {
+	    exclude_subtree_from_group(category, group)
         } else {
-	    include_visible_subtree_in_group(top_level_category, indices, group)
+	    include_subtree_in_group(top_level_category_copy,
+				     indices, group)
         }
         setTopLevelCategory(top_level_category_copy)
     }
@@ -440,7 +378,6 @@ export default function Home() {
 				      parent_excluded={false}
 				      toggle_cat={toggle_cat}
 				      group={group}
-				      search_term={searchTerm.toLowerCase()}
 			/>
 		    </li>
 		})
