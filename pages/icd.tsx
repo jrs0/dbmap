@@ -140,7 +140,7 @@ function CategoryElem({ index, category, parent_excluded,
     
     if (is_leaf(category)) {
 	return <div>
-	    <Checkbox checked={ticked}
+	    <Checkbox checked={included}
 		      onChange={handleChange} />
 	    <span>
 		<span className={styles.category_name}>
@@ -154,7 +154,7 @@ function CategoryElem({ index, category, parent_excluded,
     } else {	
 	return <div>
 	    <span className={styles.checkbox}>
-		<Checkbox checked={ticked}
+		<Checkbox checked={included}
 			  onChange={handleChange} />
 	    </span>
 	    <span className={styles.category_header}
