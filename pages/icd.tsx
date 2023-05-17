@@ -211,43 +211,44 @@ function first_super_category_excluding_group(top_level_category, category_indic
     return indices_copy
 }
 
-
-function include_subtree_in_group(top_level_category, category_indices, group) {
-    console.log(top_level_category)
-    const super_category_indices =
-	first_super_category_excluding_group(top_level_category,
-					     category_indices,
-					     group)
-    console.log("super", super_category_indices)
-    let relative_indices =
-	category_indices.slice(super_category_indices.length)
-    const super_category = get_category_ref(top_level_category,
-					    super_category_indices)
-    make_include_path_to_sub_category(super_category, relative_indices, group)
-    /* let category = get_category_ref(top_level_category, category_indices)
-     * include_all_visible_categories_in_subtree(category, group) */
-}
-
 function exclude_all_sub_categories_except_nth(category, n, group) {
     sub_categories(category)
+    // Here is the bug -- splice removes in place! Wanted to just filter
 	.splice(n, 1)
 	.map(sub_category => append_group_to_exclude_list(sub_category, group))
-    console.log("after append", category)
 }
 
 function make_include_path_to_sub_category(super_category, relative_indices, group) {
     remove_group_from_exclude_list(super_category, group)
-    for (let n = 0; n < relative_indices.lenth; n++) {
-	exclude_all_sub_categories_except_nth(super_category, n, group)
-        super_category = sub_categories(super_category)[n]
-    }
+    let category = super_category
+    relative_indices.forEach((n) => {
+	exclude_all_sub_categories_except_nth(category, n, group)
+        category = sub_categories(category)[n]
+    })
+}
+
+function include_subtree_in_group(top_level_category, category_indices, group) {
+    const super_category_indices =
+	first_super_category_excluding_group(top_level_category,
+					     category_indices,
+					     group)
+    console.log("super_indices", super_category_indices)
+    let relative_indices =
+	category_indices.slice(super_category_indices.length)
+    console.log("relative_indices", relative_indices)    
+    const super_category = get_category_ref(top_level_category,
+					    super_category_indices)
+    console.log("super_category", super_category)
+    make_include_path_to_sub_category(super_category, relative_indices, group)
+    console.log("super_category_after_exclude", super_category)
+    /* let category = get_category_ref(top_level_category, category_indices)
+     * include_all_visible_categories_in_subtree(category, group) */
 }
 
 function exclude_subtree_from_group(category: Category, group: string) {
     remove_group_exclude_from_sub_tree(category, group)
     append_group_to_exclude_list(category, group)
 }
-
 
 export default function Home() {
 
