@@ -8,7 +8,7 @@ import styles from '../styles/Category.module.css'
 import Collapsible from 'react-collapsible';
 import InfiniteScroll from 'react-infinite-scroll-component';
 
-import { parse_search_terms } from "../services/search_term.tsx"
+import { parse_search_terms } from "../services/search_term"
 
 interface EventCount {
     name: string,

@@ -7,7 +7,7 @@ import Collapsible from 'react-collapsible';
 import styles from '../styles/Category.module.css'
 import record_styles from '../styles/ClinicalCodeComp.module.css'
 
-import { parse_search_terms } from "../services/search_term.tsx"
+import { parse_search_terms } from "../services/search_term"
 
 // Information for the tick box that selects categories or codes
 interface CategorySelector {
@@ -27,14 +27,21 @@ function Checkbox({ checked, onChange }: CategorySelector) {
 // The main category for a code
 // range or a specific code
 interface Category {
-    name: string
-    docs: string;
-    index: string;
-    categories?: Category[];
-    exclude?: string[];
+    name: string,
+    docs: string,
+    index: string,
+    categories: Category[],
+    exclude?: string[],
+    highlight?: boolean,
 }
 
-function is_leaf(category: Category) {
+interface TopLevelCategory {
+    categories: Category[]
+    groups: string[]
+    highlight?: boolean,
+}
+
+function is_leaf(category: Category | TopLevelCategory) {
     return category.categories === undefined
 }
 
@@ -71,7 +78,8 @@ function is_included(category: Category, group: string, parent_excluded: boolean
     return !is_excluded(category, group, parent_excluded)
 }
 
-function sub_categories(category: Category) {
+function sub_categories(category: Category | TopLevelCategory) {
+    
     if (!is_leaf(category)) {
 	return category.categories
     } else {
@@ -81,7 +89,7 @@ function sub_categories(category: Category) {
 
 /// Remove a group from the exclude key list of a category and
 /// all its sub categories
-function remove_group_exclude_from_sub_tree(category, group) {
+function remove_group_exclude_from_sub_tree(category: Category, group: string) {
     remove_group_from_exclude_list(category, group)
     sub_categories(category).map(sub_category =>
 	remove_group_exclude_from_sub_tree(sub_category, group))
@@ -90,13 +98,13 @@ function remove_group_exclude_from_sub_tree(category, group) {
 interface CategoryData {
     index: number, // Where is this category in the parent child list
     category: Category, // The data for this category
-    parent_exclude: boolean, // Whether the parent is excluded
+    parent_excluded: boolean, // Whether the parent is excluded
     toggle_cat: (indices: number[],
 		 included: boolean) => void, // Callback to enable/disable
     group: string, // The currently selected group
 }
 
-function CategoryHeader({ category }) {
+function CategoryHeader({ category }: { category: Category }) {
     return <span className={styles.category_row}>
 	<span className={styles.category_name}>
 	    {category.name}
@@ -108,7 +116,7 @@ function CategoryHeader({ category }) {
 }
 
 
-interface ParsedSearchTerms {
+interface SearchTerms {
     include_groups: string[],
     exclude_groups: string[],
 }
@@ -124,45 +132,47 @@ function matches_search_terms(lower_case_string: string, search_terms: SearchTer
 	.include_groups
 	.map(term => lower_case_string.includes(term))
 	.every(Boolean)
-
-    const not_any_excluded_terms = search_terms
+    
+    const no_excluded_terms = search_terms
 	.exclude_groups
 	.map(term => !lower_case_string.includes(term))
 	.every(Boolean)
 
-    return every_included_term && not_any_excluded_terms
+    return every_included_term && no_excluded_terms
 }
 
-function name_contains_match(category: Category, search_terms: SearchTerms) {
-    const name_string = category.name.toLowerCase()
-    return matches_search_terms(name_string, search_terms)
+function name_contains_match(category: Category | TopLevelCategory, search_terms: SearchTerms) {
+    if ("name" in category) {
+	const name_string = category.name.toLowerCase()
+	return matches_search_terms(name_string, search_terms)
+    } else {
+	return false
+    }
 }
 
-function docs_contains_match(category: Category, search_terms: SearchTerms) {
-    const docs_string = category.docs.toLowerCase()
-    return matches_search_terms(docs_string, search_terms)
+function docs_contains_match(category: Category | TopLevelCategory, search_terms: SearchTerms) {
+    if ("docs" in category) {
+	const docs_string = category.docs.toLowerCase()
+	return matches_search_terms(docs_string, search_terms)
+    } else {
+	return false
+    }
 }
 
-function is_highlighted(category) {
+function is_highlighted(category: Category | TopLevelCategory) {
     return category.highlight === true
 }
 
 function CategoryElem({ index, category, parent_excluded,
-			toggle_cat, group, search_term}: CategoryData) {
+			toggle_cat, group }: CategoryData) {
     
     const [hidden, setHidden] = useState(true)
     
     const included = is_included(category, group, parent_excluded)
     const excluded = is_excluded(category, group, parent_excluded)
     
-    
     function handleChange() {
         toggle_cat([index], included)
-    }
-    
-    function hidden_category_indices(categories) {
-	let category_indices = categories.map(node => (!node.docs.toLowerCase().includes(search_term)))
-	return category_indices
     }
     
     function toggle_cat_sub(indices: number[], included: boolean) {
@@ -171,7 +181,7 @@ function CategoryElem({ index, category, parent_excluded,
     }
     
     if (is_leaf(category)) {
-	return <div className ={is_highlighted(category)? styles.highlighted : {}}>
+	return <div className ={is_highlighted(category)? styles.highlighted : undefined}>
 	    <Checkbox checked={included}
 		      onChange={handleChange} />
 	    <span>
@@ -185,7 +195,7 @@ function CategoryElem({ index, category, parent_excluded,
 	</div>	
     } else {	
 	return <div>
-	    <div className ={is_highlighted(category)? styles.highlighted : {}}>
+	    <div className ={is_highlighted(category)? styles.highlighted : undefined}>
 		<span className={styles.checkbox}>
 		    <Checkbox checked={included}
 			      onChange={handleChange} />
@@ -212,11 +222,6 @@ function CategoryElem({ index, category, parent_excluded,
     }
 }
 
-interface TopLevelCategory {
-    categories: Category[]
-    groups: string[]
-}
-
 function get_category_ref(top_level_category: TopLevelCategory, indices: number[]) {
 
     // Get the first category as a special case (convert from top level
@@ -232,7 +237,7 @@ function get_category_ref(top_level_category: TopLevelCategory, indices: number[
     return category;
 }
 
-function first_super_category_excluding_group(top_level_category, category_indices, group) {
+function first_super_category_excluding_group(top_level_category: TopLevelCategory, category_indices: number[], group: string) {
     let indices_copy = category_indices.slice()
     while (true) {
 	let category = get_category_ref(top_level_category, indices_copy)
@@ -244,7 +249,7 @@ function first_super_category_excluding_group(top_level_category, category_indic
     return indices_copy
 }
 
-function exclude_all_sub_categories_except_nth(category, n, group) {
+function exclude_all_sub_categories_except_nth(category: Category, n: number, group: string) {
     sub_categories(category)
 	.map((sub_category, index) => {
 	    if (index != n) {
@@ -253,7 +258,7 @@ function exclude_all_sub_categories_except_nth(category, n, group) {
 	})
 }
 
-function make_include_path_to_sub_category(super_category, relative_indices, group) {
+function make_include_path_to_sub_category(super_category: Category, relative_indices: number[], group: string) {
     remove_group_from_exclude_list(super_category, group)
     let category = super_category
     relative_indices.forEach((n) => {
@@ -262,7 +267,7 @@ function make_include_path_to_sub_category(super_category, relative_indices, gro
     })
 }
 
-function include_subtree_in_group(top_level_category, category_indices, group) {
+function include_subtree_in_group(top_level_category: TopLevelCategory, category_indices: number[], group: string) {
     const super_category_indices =
 	first_super_category_excluding_group(top_level_category,
 					     category_indices,
@@ -279,16 +284,16 @@ function exclude_subtree_from_group(category: Category, group: string) {
     append_group_to_exclude_list(category, group)
 }
 
-function add_highlight_key(category) {
+function add_highlight_key(category: TopLevelCategory | Category) {
     category.highlight = true
 }
 
-function remove_highlight_key(category) {
+function remove_highlight_key(category: TopLevelCategory | Category) {
     delete category.highlight
 }
 
 function add_category_highlights(category: Category | TopLevelCategory,
-				 search_terms: SearchTerms) {
+				 search_terms: SearchTerms): boolean {
     
     let highlighted = false
     if (is_leaf(category)) {
@@ -388,7 +393,6 @@ export default function Home() {
     }
 
     const parsed_search_terms = parse_search_terms(searchTerm)
-    console.log(parsed_search_terms)
     add_category_highlights(top_level_category, parsed_search_terms)
     
     // TODO: Currently using the length of the categories array

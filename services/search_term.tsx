@@ -15,7 +15,7 @@ export function parse_search_terms(searchTerm: string) {
 	    exclude_groups: [],
 	}
     }
-
+    
     const individual_search_terms = searchTerm
 	.toLowerCase()
 	.split(/[ ,]+/)
