@@ -94,7 +94,6 @@ interface CategoryData {
     toggle_cat: (indices: number[],
 		 included: boolean) => void, // Callback to enable/disable
     group: string, // The currently selected group
-    hidden: boolean, // Whether the category is expanded
 }
 
 function CategoryHeader({ category }) {
@@ -123,8 +122,9 @@ function CategoryElem({ index, category, parent_excluded,
     
     const included = is_included(category, group, parent_excluded)
     const excluded = is_excluded(category, group, parent_excluded)
-    
+
     function handleChange() {
+	console.log("included", included)
         toggle_cat([index], included)
     }
     
@@ -135,6 +135,7 @@ function CategoryElem({ index, category, parent_excluded,
     
     function toggle_cat_sub(indices: number[], included: boolean) {
         let new_indices = [index].concat(indices)
+	console.log(new_indices)
         toggle_cat(new_indices, included)
     }
     
@@ -210,39 +211,41 @@ function first_super_category_excluding_group(top_level_category, category_indic
     return indices_copy
 }
 
+
+function include_subtree_in_group(top_level_category, category_indices, group) {
+    console.log(top_level_category)
+    const super_category_indices =
+	first_super_category_excluding_group(top_level_category,
+					     category_indices,
+					     group)
+    console.log("super", super_category_indices)
+    let relative_indices =
+	category_indices.slice(super_category_indices.length)
+    const super_category = get_category_ref(top_level_category,
+					    super_category_indices)
+    make_include_path_to_sub_category(super_category, relative_indices, group)
+    /* let category = get_category_ref(top_level_category, category_indices)
+     * include_all_visible_categories_in_subtree(category, group) */
+}
+
 function exclude_all_sub_categories_except_nth(category, n, group) {
     sub_categories(category)
 	.splice(n, 1)
-	.map(sub_category => remove_group_from_exclude_list(sub_category, group))
+	.map(sub_category => append_group_to_exclude_list(sub_category, group))
+    console.log("after append", category)
 }
 
 function make_include_path_to_sub_category(super_category, relative_indices, group) {
-    relative_indices.forEach((n) => {
-	if (!is_leaf(super_category)) {
-	    exclude_all_sub_categories_except_n(super_category, n, group)
-	} else {
-	    throw new Error("Expected to find child key")
-	}
+    remove_group_from_exclude_list(super_category, group)
+    for (let n = 0; n < relative_indices.lenth; n++) {
+	exclude_all_sub_categories_except_nth(super_category, n, group)
         super_category = sub_categories(super_category)[n]
-    })
+    }
 }
 
-function exclude_visible_subtree_from_group(category: Category, group: string) {
-    let hidden_and_included_count = sub_categories(category)
-	.filter(sub_category =>
-	    is_hidden(sub_category) &&
-	    !has_group_in_exclude_list(sub_category, group))
-	.length
-
-    if (hidden_and_included_count === 0) {
-	remove_group_exclude_from_sub_tree(category, group)
-	append_group_to_exclude_list(category, group)
-    } else {
-	sub_categories(category)
-	    .filter(is_visible)
-	    .map(sub_category =>
-		exclude_visible_subtree_from_group(sub_category, group))
-    }
+function exclude_subtree_from_group(category: Category, group: string) {
+    remove_group_exclude_from_sub_tree(category, group)
+    append_group_to_exclude_list(category, group)
 }
 
 
@@ -312,23 +315,12 @@ export default function Home() {
     const handleSearchTermChange = (event: React.ChangeEvent<any>) => {
 	setSearchTerm(event.target.value);
     };
-
-    function include_subtree_in_group(top_level_category, category_indices, group) {
-	const super_category_indices = first_super_category_excluding_group(top_level_category,
-									    category_indices,
-									    group)
-	let relative_indices = category_indices.slice(super_category_indices.length)
-	const super_category = get_category_ref(top_level_category,
-						super_category_indices)
-	make_include_path_to_sub_category(super_category, relative_indices, group)
-	/* let category = get_category_ref(top_level_category, category_indices)
-	   include_all_visible_categories_in_subtree(category, group) */
-    }
     
-    function toggle_cat(indices: number[], ticked: included) {
+    function toggle_cat(indices: number[], included: boolean) {
         let top_level_category_copy = structuredClone(top_level_category);
         let category = get_category_ref(top_level_category_copy, indices)
         if (included) {
+	    console.log("excluding")
 	    exclude_subtree_from_group(category, group)
         } else {
 	    include_subtree_in_group(top_level_category_copy,
@@ -360,7 +352,7 @@ export default function Home() {
 	    </div>
 	    <div className={styles.groups}>
 		<label htmlFor="search">Search: </label>
-		<input autocomplete="off" id="search" type="text" onChange={handleSearchTermChange}/>
+		<input autoComplete="off" id="search" type="text" onChange={handleSearchTermChange}/>
 	    </div>
 	    <div className={styles.groups}>
 		Groups: <select onChange={handleGroupChange}> {
