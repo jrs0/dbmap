@@ -107,12 +107,40 @@ function CategoryHeader({ category }) {
     </span>
 }
 
-function docs_contains_match(category, lower_case_search_term) {
-    return category.docs.toLowerCase().includes(lower_case_search_term)
+
+interface ParsedSearchTerms {
+    include_groups: string[],
+    exclude_groups: string[],
 }
 
-function name_contains_match(category, lower_case_search_term) {
-    return category.name.toLowerCase().includes(lower_case_search_term)
+function matches_search_terms(lower_case_string: string, search_terms: SearchTerms) {
+
+    if (search_terms.include_groups.length === 0
+	&& search_terms.exclude_groups.length === 0) {
+	return false
+    }
+    
+    const every_included_term = search_terms
+	.include_groups
+	.map(term => lower_case_string.includes(term))
+	.every(Boolean)
+
+    const not_any_excluded_terms = search_terms
+	.exclude_groups
+	.map(term => !lower_case_string.includes(term))
+	.every(Boolean)
+
+    return every_included_term && not_any_excluded_terms
+}
+
+function name_contains_match(category: Category, search_terms: SearchTerms) {
+    const name_string = category.name.toLowerCase()
+    return matches_search_terms(name_string, search_terms)
+}
+
+function docs_contains_match(category: Category, search_terms: SearchTerms) {
+    const docs_string = category.docs.toLowerCase()
+    return matches_search_terms(docs_string, search_terms)
 }
 
 function is_highlighted(category) {
@@ -128,9 +156,7 @@ function CategoryElem({ index, category, parent_excluded,
     const excluded = is_excluded(category, group, parent_excluded)
     
     
-    
     function handleChange() {
-	console.log("included", included)
         toggle_cat([index], included)
     }
     
@@ -141,7 +167,6 @@ function CategoryElem({ index, category, parent_excluded,
     
     function toggle_cat_sub(indices: number[], included: boolean) {
         let new_indices = [index].concat(indices)
-	console.log(new_indices)
         toggle_cat(new_indices, included)
     }
     
@@ -262,17 +287,16 @@ function remove_highlight_key(category) {
     delete category.highlight
 }
 
-
 function add_category_highlights(category: Category | TopLevelCategory,
-				 lower_case_search_term: string) {
+				 search_terms: SearchTerms) {
+    
     let highlighted = false
     if (is_leaf(category)) {
-	highlighted = lower_case_search_term !== "" &&
-		      (name_contains_match(category, lower_case_search_term)
-		    || docs_contains_match(category, lower_case_search_term))
+	highlighted = name_contains_match(category, search_terms)
+		   || docs_contains_match(category, search_terms)
     } else {
 	highlighted = sub_categories(category)
-	    .map(sub_category => add_category_highlights(sub_category, lower_case_search_term))
+	    .map(sub_category => add_category_highlights(sub_category, search_terms))
 	    .some(Boolean)
     }
     if (highlighted) {
@@ -348,8 +372,7 @@ export default function Home() {
 
     const handleSearchTermChange = (event: React.ChangeEvent<any>) => {
 	const search_term = event.target.value
-	const lower_case_search_term = search_term.toLowerCase()
-	setSearchTerm(lower_case_search_term);
+	setSearchTerm(search_term);
     };
     
     function toggle_cat(indices: number[], included: boolean) {
@@ -364,8 +387,9 @@ export default function Home() {
         setTopLevelCategory(top_level_category_copy)
     }
 
-    add_category_highlights(top_level_category, searchTerm)
-    console.log(top_level_category)
+    const parsed_search_terms = parse_search_terms(searchTerm)
+    console.log(parsed_search_terms)
+    add_category_highlights(top_level_category, parsed_search_terms)
     
     // TODO: Currently using the length of the categories array
     // as a proxy for whether the file is loaded. Fix.

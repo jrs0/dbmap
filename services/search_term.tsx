@@ -1,4 +1,3 @@
-
 /**
  * \brief Parse a simple space-separated list of search terms
  *
@@ -8,8 +7,20 @@
  * (with the ! removed)
  *
  */
-function parse_search_terms(searchTerm: string) {
-    const individual_search_terms = searchTerm.split(/[ ,]+/)
+export function parse_search_terms(searchTerm: string) {
+
+    if (searchTerm.length === 0) {
+	return {
+	    include_groups: [],
+	    exclude_groups: [],
+	}
+    }
+
+    const individual_search_terms = searchTerm
+	.toLowerCase()
+	.split(/[ ,]+/)
+
+    
     let include_groups = individual_search_terms
 	.filter(function(term) {
 	    return term.charAt(0) !== "!"
@@ -21,7 +32,7 @@ function parse_search_terms(searchTerm: string) {
 	}).map(function(term) {
 	    return term.replace("!", '')
 	})
-
+    
     return {
 	include_groups: include_groups,
 	exclude_groups: exclude_groups
