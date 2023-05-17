@@ -115,6 +115,10 @@ function name_contains_match(category, lower_case_search_term) {
     return category.name.toLowerCase().includes(lower_case_search_term)
 }
 
+function is_highlighted(category) {
+    return category.highlight === true
+}
+
 function CategoryElem({ index, category, parent_excluded,
 			toggle_cat, group, search_term}: CategoryData) {
     
@@ -122,7 +126,9 @@ function CategoryElem({ index, category, parent_excluded,
     
     const included = is_included(category, group, parent_excluded)
     const excluded = is_excluded(category, group, parent_excluded)
-
+    
+    
+    
     function handleChange() {
 	console.log("included", included)
         toggle_cat([index], included)
@@ -140,7 +146,7 @@ function CategoryElem({ index, category, parent_excluded,
     }
     
     if (is_leaf(category)) {
-	return <div>
+	return <div className ={is_highlighted(category)? styles.highlighted : {}}>
 	    <Checkbox checked={included}
 		      onChange={handleChange} />
 	    <span>
@@ -154,14 +160,16 @@ function CategoryElem({ index, category, parent_excluded,
 	</div>	
     } else {	
 	return <div>
-	    <span className={styles.checkbox}>
-		<Checkbox checked={included}
-			  onChange={handleChange} />
-	    </span>
-	    <span className={styles.category_header}
-		  onClick={() => setHidden(!hidden)}>
-		<CategoryHeader category={category} />
-	    </span>
+	    <div className ={is_highlighted(category)? styles.highlighted : {}}>
+		<span className={styles.checkbox}>
+		    <Checkbox checked={included}
+			      onChange={handleChange} />
+		</span>
+		<span className={styles.category_header}
+		      onClick={() => setHidden(!hidden)}>
+		    <CategoryHeader category={category} />
+		</span>
+	    </div>
 	    <ol className={styles.category_list}> {
 		category.categories.map((node,index) => {
 		    if (!hidden) {
@@ -234,22 +242,45 @@ function include_subtree_in_group(top_level_category, category_indices, group) {
 	first_super_category_excluding_group(top_level_category,
 					     category_indices,
 					     group)
-    console.log("super_indices", super_category_indices)
     let relative_indices =
 	category_indices.slice(super_category_indices.length)
-    console.log("relative_indices", relative_indices)    
     const super_category = get_category_ref(top_level_category,
 					    super_category_indices)
-    console.log("super_category", super_category)
     make_include_path_to_sub_category(super_category, relative_indices, group)
-    console.log("super_category_after_exclude", super_category)
-    /* let category = get_category_ref(top_level_category, category_indices)
-     * include_all_visible_categories_in_subtree(category, group) */
 }
 
 function exclude_subtree_from_group(category: Category, group: string) {
     remove_group_exclude_from_sub_tree(category, group)
     append_group_to_exclude_list(category, group)
+}
+
+function add_highlight_key(category) {
+    category.highlight = true
+}
+
+function remove_highlight_key(category) {
+    delete category.highlight
+}
+
+
+function add_category_highlights(category: Category | TopLevelCategory,
+				 lower_case_search_term: string) {
+    let highlighted = false
+    if (is_leaf(category)) {
+	highlighted = lower_case_search_term !== "" &&
+		      (name_contains_match(category, lower_case_search_term)
+		    || docs_contains_match(category, lower_case_search_term))
+    } else {
+	highlighted = sub_categories(category)
+	    .map(sub_category => add_category_highlights(sub_category, lower_case_search_term))
+	    .some(Boolean)
+    }
+    if (highlighted) {
+	add_highlight_key(category)
+    } else {
+	remove_highlight_key(category)
+    }
+    return highlighted
 }
 
 export default function Home() {
@@ -316,14 +347,15 @@ export default function Home() {
     };
 
     const handleSearchTermChange = (event: React.ChangeEvent<any>) => {
-	setSearchTerm(event.target.value);
+	const search_term = event.target.value
+	const lower_case_search_term = search_term.toLowerCase()
+	setSearchTerm(lower_case_search_term);
     };
     
     function toggle_cat(indices: number[], included: boolean) {
         let top_level_category_copy = structuredClone(top_level_category);
         let category = get_category_ref(top_level_category_copy, indices)
         if (included) {
-	    console.log("excluding")
 	    exclude_subtree_from_group(category, group)
         } else {
 	    include_subtree_in_group(top_level_category_copy,
@@ -331,6 +363,9 @@ export default function Home() {
         }
         setTopLevelCategory(top_level_category_copy)
     }
+
+    add_category_highlights(top_level_category, searchTerm)
+    console.log(top_level_category)
     
     // TODO: Currently using the length of the categories array
     // as a proxy for whether the file is loaded. Fix.
