@@ -65,16 +65,16 @@ function remove_group_from_exclude_list(category: Category, group: string) {
     }
 }
 
-function has_group_in_exclude_list(category: Category, group: string) {
-    return (category.exclude !== undefined)
+function has_group_in_exclude_list(category: Category | TopLevelCategory, group: string) {
+    return ("exclude" in category) && (category.exclude !== undefined)
 	&& category.exclude.includes(group);
 }
 
-function is_excluded(category: Category, group: string, parent_excluded: boolean) {
+function is_excluded(category: Category | TopLevelCategory, group: string, parent_excluded: boolean) {
     return has_group_in_exclude_list(category, group) || parent_excluded
 }
 
-function is_included(category: Category, group: string, parent_excluded: boolean) {
+function is_included(category: Category | TopLevelCategory, group: string, parent_excluded: boolean) {
     return !is_excluded(category, group, parent_excluded)
 }
 
@@ -326,7 +326,7 @@ function add_highlight_counts(a: HighlightCounts, b: HighlightCounts) {
     }
 }
 
-function count_highlighted_leaves(category: Category | TopLevelCategory, group: string, parent_excluded: boolean) {
+function count_highlighted_leaves(category: Category | TopLevelCategory, group: string, parent_excluded: boolean): HighlightCounts {
     let counts = {
 	total_included: 0,
 	total_highlighted: 0,
