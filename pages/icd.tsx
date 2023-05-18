@@ -312,6 +312,54 @@ function add_category_highlights(category: Category | TopLevelCategory,
     return highlighted
 }
 
+interface HighlightCounts {
+    total_included: number,
+    total_highlighted: number,
+    included_highlighted: number,
+}
+
+function add_highlight_counts(a: HighlightCounts, b: HighlightCounts) {
+    return {
+	total_included: a.total_included + b.total_included,
+	total_highlighted: a.total_highlighted + b.total_highlighted,
+	included_highlighted: a.included_highlighted + b.included_highlighted,
+    }
+}
+
+function count_highlighted_leaves(category: Category | TopLevelCategory, group: string, parent_excluded: boolean) {
+    let counts = {
+	total_included: 0,
+	total_highlighted: 0,
+	included_highlighted: 0,
+    }
+    let category_is_included = is_included(category, group, parent_excluded)
+    if (is_leaf(category)) {
+	if (category_is_included) {
+	    counts.total_included = 1
+	}
+	if (is_highlighted(category)) {
+	    counts.total_highlighted = 1
+	    if (category_is_included) {
+		counts.included_highlighted = 1
+	    }
+	}
+	return counts
+    } else {
+	return sub_categories(category)
+	    .map(sub_category => (
+		count_highlighted_leaves(
+		    sub_category,
+		    group,
+		    !category_is_included
+		)))
+	    .reduce(add_highlight_counts, {
+		total_included: 0,
+		total_highlighted: 0,
+		included_highlighted: 0,		
+	    })
+    }
+}
+
 export default function Home() {
 
     let [top_level_category, setTopLevelCategory] = useState<TopLevelCategory>({categories: [], groups: []});
@@ -394,6 +442,8 @@ export default function Home() {
 
     const parsed_search_terms = parse_search_terms(searchTerm)
     add_category_highlights(top_level_category, parsed_search_terms)
+
+    const counts = count_highlighted_leaves(top_level_category, group, false)
     
     // TODO: Currently using the length of the categories array
     // as a proxy for whether the file is loaded. Fix.
@@ -413,33 +463,42 @@ export default function Home() {
 	    <p className={styles.info}>Use the groups selector to pick a group, and then use the checkboxes to include or exclude categories or codes from the group. When you are finished, save the resulting groups to a file.</p>
 	    <div>
 		<span className={styles.button}
-				onClick={save_file}>Save as</span>
-		<Link className={styles.button} href="/">Back</Link>
+	onClick={save_file}>Save as</span>
+	<Link className={styles.button} href="/">Back</Link>
+	</div>
+	<div className={styles.groups}>
+	    <div>
+		Specify comma-separated phrases to search code names and descriptions. Input strings are case insensitive, and can include spaces, but only matches for the whole string are highlighted. Codes are highlighted on matching any of the search strings, and categories are highlighted if they contain a highlighted code anywhere.
 	    </div>
-	    <div className={styles.groups}>
-		<label htmlFor="search">Search: </label>
-		<input autoComplete="off" id="search" type="text" onChange={handleSearchTermChange}/>
+	    <label htmlFor="search">Search: </label>
+	    <input autoComplete="off" id="search" type="text" onChange={handleSearchTermChange}/>
+	</div>
+	<b>{counts.total_highlighted}</b> highlighted by search, with <b>{counts.included_highlighted}</b> of these included in <b>{group}</b> group
+	<div>
+	</div>
+	<div className={styles.groups}>
+	    Groups: <select onChange={handleGroupChange}> {
+		get_groups().map((grp) => (
+		    <option key={grp}>{grp}</option>
+		))
+	    } </select>
+	    <div>
+		<b>{group}</b> group includes <b>{counts.total_included}</b> codes in total
 	    </div>
-	    <div className={styles.groups}>
-		Groups: <select onChange={handleGroupChange}> {
-		    get_groups().map((grp) => (
-			<option key={grp}>{grp}</option>
-		    ))
-		} </select>
-	    </div>
+	</div>
 
-	    <ol className={styles.category_list}> {
-		top_level_category.categories.map((node,index) => {
-		    return <li key={node.index}>
-			<CategoryElem index={index}
-				      category={node}
-				      parent_excluded={false}
-				      toggle_cat={toggle_cat}
-				      group={group}
-			/>
-		    </li>
-		})
-	    } </ol>
+	<ol className={styles.category_list}> {
+	    top_level_category.categories.map((node,index) => {
+		return <li key={node.index}>
+		    <CategoryElem index={index}
+				  category={node}
+				  parent_excluded={false}
+				  toggle_cat={toggle_cat}
+				  group={group}
+		    />
+		</li>
+	    })
+	} </ol>
 	</div>
 	
     }
