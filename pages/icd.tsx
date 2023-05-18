@@ -128,17 +128,17 @@ function matches_search_terms(lower_case_string: string, search_terms: SearchTer
 	return false
     }
     
-    const every_included_term = search_terms
+    const any_included_term = search_terms
 	.include_groups
 	.map(term => lower_case_string.includes(term))
-	.every(Boolean)
+	.some(Boolean)
     
     const no_excluded_terms = search_terms
 	.exclude_groups
 	.map(term => !lower_case_string.includes(term))
 	.every(Boolean)
 
-    return every_included_term && no_excluded_terms
+    return any_included_term && no_excluded_terms
 }
 
 function name_contains_match(category: Category | TopLevelCategory, search_terms: SearchTerms) {
