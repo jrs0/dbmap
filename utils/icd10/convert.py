@@ -2,21 +2,35 @@
 from bs4 import BeautifulSoup
 import yaml
 
-def section_xml_to_dict(chapter_xml):
-    pass
-    
-def chapter_xml_to_dict(chapter_xml):
+def diagnosis_xml_to_dict(diagnosis):
+    return {
+        "name": diagnosis.find("name").text,
+        "docs": diagnosis.find("desc").text,
+    }
 
-    sections = []
-    for section in chapter_xml.find_all("section"):
-        sections.append({
-            "name": section.get("id")
-        })
+def section_xml_to_dict(section):
+    
+    diagnosis_list = []
+    for diagnosis in chapter.find_all("diag"):
+        diagnosis_list.append(diagnosis_xml_to_dict(diagnosis))
+    
+    section_dict = {
+        "name": section.get("id"),
+        "docs": section.find("desc").text,
+        "categories": diagnosis_list,
+    }
+
+        
+def chapter_xml_to_dict(chapter):
+
+    section_list = []
+    for section in chapter.find_all("section"):
+        section_list.append(section_xml_to_dict(section))
     
     chapter_dict = {
         "name": chapter.find("name").text,
         "docs": chapter.find("desc").text,
-        "categories": sections,
+        "categories": section_list,
     }
     return chapter_dict
 
