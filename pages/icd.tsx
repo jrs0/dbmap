@@ -179,9 +179,18 @@ function CategoryElem({ index, category, parent_excluded,
         let new_indices = [index].concat(indices)
         toggle_cat(new_indices, included)
     }
+
+    let style;
+    if (is_highlighted(category)) {
+	if (included) {
+	    style = styles.highlighted_included
+	} else {
+	    style = styles.highlighted_excluded
+	}
+    }
     
     if (is_leaf(category)) {
-	return <div className ={is_highlighted(category)? styles.highlighted : undefined}>
+	return <div className ={style}>
 	    <Checkbox checked={included}
 		      onChange={handleChange} />
 	    <span>
@@ -195,7 +204,7 @@ function CategoryElem({ index, category, parent_excluded,
 	</div>	
     } else {	
 	return <div>
-	    <div className ={is_highlighted(category)? styles.highlighted : undefined}>
+	    <div className ={style}>
 		<span className={styles.checkbox}>
 		    <Checkbox checked={included}
 			      onChange={handleChange} />

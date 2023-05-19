@@ -65,6 +65,10 @@
     padding: 5px;
 }
 
-.highlighted {
+.highlighted_included {
     background-color: lightblue;
+}
+
+.highlighted_excluded {
+    background-color: lightpink;
 }
