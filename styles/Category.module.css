@@ -65,10 +65,6 @@
     padding: 5px;
 }
 
-.highlighted_included {
-    background: linear-gradient(to right, lightblue 0%, lightblue 80%, lightpink 80%, lightpink 100%);
-}
-
-.highlighted_excluded {
-    background-color: lightpink;
+.highlighted {
+    background: linear-gradient(to right, lightblue 0%, lightblue var(--change), lightpink var(--change), lightpink 100%);
 }

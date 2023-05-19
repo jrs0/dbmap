@@ -180,17 +180,17 @@ function CategoryElem({ index, category, parent_excluded,
         toggle_cat(new_indices, included)
     }
 
-    let style;
+    let classname;
+    let style: React.CSSProperties = {};
     if (is_highlighted(category)) {
-	if (included) {
-	    style = styles.highlighted_included
-	} else {
-	    style = styles.highlighted_excluded
-	}
+	const counts = category.counts
+	const change = 100 * counts.included_highlighted / counts.total_highlighted
+	style = { "--change": `${change}%` }
+	classname = styles.highlighted
     }
     
     if (is_leaf(category)) {
-	return <div className ={style}>
+	return <div className ={classname} style={style}>
 	    <Checkbox checked={included}
 		      onChange={handleChange} />
 	    <span>
@@ -204,7 +204,7 @@ function CategoryElem({ index, category, parent_excluded,
 	</div>	
     } else {	
 	return <div>
-	    <div className ={style}>
+	    <div className ={classname} style={style}>
 		<span className={styles.checkbox}>
 		    <Checkbox checked={included}
 			      onChange={handleChange} />
@@ -352,9 +352,8 @@ function count_highlighted_leaves(category: Category | TopLevelCategory, group: 
 		counts.included_highlighted = 1
 	    }
 	}
-	return counts
     } else {
-	return sub_categories(category)
+	counts = sub_categories(category)
 	    .map(sub_category => (
 		count_highlighted_leaves(
 		    sub_category,
@@ -367,6 +366,8 @@ function count_highlighted_leaves(category: Category | TopLevelCategory, group: 
 		included_highlighted: 0,		
 	    })
     }
+    category.counts = counts
+    return counts
 }
 
 export default function Home() {
