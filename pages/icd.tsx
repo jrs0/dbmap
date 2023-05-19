@@ -24,8 +24,12 @@ function Checkbox({ checked, onChange }: CategorySelector) {
                 onChange={onChange} />
 };
 
-// The main category for a code
-// range or a specific code
+interface HighlightCounts {
+    total_included: number,
+    total_highlighted: number,
+    included_highlighted: number,
+}
+
 interface Category {
     name: string,
     docs: string,
@@ -33,12 +37,14 @@ interface Category {
     categories: Category[],
     exclude?: string[],
     highlight?: boolean,
+    counts?: HighlightCounts,
 }
 
 interface TopLevelCategory {
     categories: Category[]
     groups: string[]
     highlight?: boolean,
+    counts?: HighlightCounts,
 }
 
 function is_leaf(category: Category | TopLevelCategory) {
@@ -181,12 +187,14 @@ function CategoryElem({ index, category, parent_excluded,
     }
 
     let classname;
-    let style: React.CSSProperties = {};
+    let style;
     if (is_highlighted(category)) {
-	const counts = category.counts
-	const change = 100 * counts.included_highlighted / counts.total_highlighted
-	style = { "--change": `${change}%` }
-	classname = styles.highlighted
+	if (category.counts !== undefined) {
+	    const counts = category.counts
+	    const change = 100 * counts.included_highlighted / counts.total_highlighted
+	    style = { "--change": `${change}%` } as React.CSSProperties
+	    classname = styles.highlighted
+	}
     }
     
     if (is_leaf(category)) {
@@ -319,12 +327,6 @@ function add_category_highlights(category: Category | TopLevelCategory,
 	remove_highlight_key(category)
     }
     return highlighted
-}
-
-interface HighlightCounts {
-    total_included: number,
-    total_highlighted: number,
-    included_highlighted: number,
 }
 
 function strip_highlight_counts(category: Category | TopLevelCategory) {
