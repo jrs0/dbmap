@@ -1,12 +1,13 @@
 # ICD-10 Code Conversion Tools
 
-To use the utilities here:
+To use the utilities here (on Linux):
 
 ```bash
-# On windows, following a default install of python3, the
-# default python version executed by "python" is python3.
-# If you are on Linux, make sure to call python3 as usual
-# when creating the venv
+sudo apt installt python3 python3-venv
 python -m venv venv
-source
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Run the conversion program
+./convert.py
 ```
