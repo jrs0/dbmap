@@ -1,3 +1,12 @@
+.checkbox {
+    vertical-align: top;
+    display: inline-block
+}
+
+.category_header {
+    display: inline-block
+}
+
 .category_name {
     font-weight: bold;
     padding: 0.5em;
@@ -54,4 +63,8 @@
 
 .info {
     padding: 5px;
+}
+
+.highlighted {
+    background: linear-gradient(to right, lightblue 0%, lightblue var(--change), lightpink var(--change), lightpink 100%);
 }
