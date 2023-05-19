@@ -327,6 +327,22 @@ interface HighlightCounts {
     included_highlighted: number,
 }
 
+function strip_highlight_counts(category: Category | TopLevelCategory) {
+    delete category.counts
+    if (!is_leaf(category)) {
+	sub_categories(category)
+		       .map(strip_highlight_counts)
+    }
+}
+
+function strip_highlight_keys(category: Category | TopLevelCategory) {
+    delete category.highlight
+    if (!is_leaf(category)) {
+	sub_categories(category)
+	    .map(strip_highlight_keys)
+    }
+}
+
 function add_highlight_counts(a: HighlightCounts, b: HighlightCounts) {
     return {
 	total_included: a.total_included + b.total_included,
@@ -336,24 +352,24 @@ function add_highlight_counts(a: HighlightCounts, b: HighlightCounts) {
 }
 
 function count_highlighted_leaves(category: Category | TopLevelCategory, group: string, parent_excluded: boolean): HighlightCounts {
-    let counts = {
-	total_included: 0,
-	total_highlighted: 0,
-	included_highlighted: 0,
-    }
     let category_is_included = is_included(category, group, parent_excluded)
     if (is_leaf(category)) {
+	category.counts = {
+	    total_included: 0,
+	    total_highlighted: 0,
+	    included_highlighted: 0,
+	}
 	if (category_is_included) {
-	    counts.total_included = 1
+	    category.counts.total_included = 1
 	}
 	if (is_highlighted(category)) {
-	    counts.total_highlighted = 1
+	    category.counts.total_highlighted = 1
 	    if (category_is_included) {
-		counts.included_highlighted = 1
+		category.counts.included_highlighted = 1
 	    }
 	}
     } else {
-	counts = sub_categories(category)
+	category.counts = sub_categories(category)
 	    .map(sub_category => (
 		count_highlighted_leaves(
 		    sub_category,
@@ -366,8 +382,7 @@ function count_highlighted_leaves(category: Category | TopLevelCategory, group: 
 		included_highlighted: 0,		
 	    })
     }
-    category.counts = counts
-    return counts
+    return category.counts
 }
 
 export default function Home() {
@@ -376,8 +391,12 @@ export default function Home() {
     const [searchTerm, setSearchTerm] = useState('');
     
     function save_file() {
+	const top_level_category_copy = structuredClone(top_level_category);
+	strip_highlight_counts(top_level_category_copy)
+	strip_highlight_keys(top_level_category_copy)
+	console.log(top_level_category_copy)
         invoke('save_yaml', {
-	    topLevelCategory: top_level_category
+	    topLevelCategory: top_level_category_copy
 	})
     }
 
