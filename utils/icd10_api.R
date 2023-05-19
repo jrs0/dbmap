@@ -13,10 +13,10 @@
 ##'
 ##' @title Get the API token
 ##' @return The token (named list)
-icd_api_token <- function()
+icd_api_token <- function(credential_path = "secret/icd10-cred.yaml")
 {
     ## Authenticate the endpoint
-    secret <- yaml::read_yaml(system.file("extdata", "secret/icd10_cred.yaml", package = "icdb"))
+    secret <- yaml::read_yaml(credential_path)
 
     token_endpoint = 'https://icdaccessmanagement.who.int/connect/token'
     payload <- c(secret, list
@@ -64,7 +64,10 @@ icd_api_request <- function(token, endpoint, data = list())
 
 }
 
-icd_api_get_releases(token)
+icd_api_get_releases <- function(token) {
+    endpoint <- "https://id.who.int/icd/release/10"
+    icd_api_request(token, endpoint)
+}
 
 ##' Use this function to automatically process the ICD-10 classifications into
 ##' a codes definition file that can be used to process diagnosis code columns.
